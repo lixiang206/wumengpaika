@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>舞萌 Maimai 实时排卡助手</title>
+    <title>舞萌 Maimai 实时排卡</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -16,11 +16,11 @@
     <header class="text-center my-4">
         <h1 class="text-2xl font-bold text-gray-800 flex justify-center items-center gap-2">
             <span class="w-4 h-4 rounded-full bg-cyan-400 inline-block"></span>
-            Maimai 排卡助手
+            Maimai 排卡
             <span class="w-4 h-4 rounded-full bg-orange-400 inline-block"></span>
         </h1>
         <p class="text-xs text-gray-500 mt-1">
-            Supabase 驱动 · 状态: 
+            服务 驱动 · 状态: 
             <span :class="syncStatus === '已同步' ? 'text-green-500' : 'text-red-500 font-bold'">{{ syncStatus }}</span>
             <br><span class="text-[10px] text-gray-400">（每日22:00自动清空当日数据）</span>
         </p>
