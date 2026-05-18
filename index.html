@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>舞萌 Maimai 实时排卡助手</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div id="app" class="max-w-md mx-auto p-4 pb-24">
+    <header class="text-center my-4">
+        <h1 class="text-2xl font-bold text-gray-800 flex justify-center items-center gap-2">
+            <span class="w-4 h-4 rounded-full bg-cyan-400 inline-block"></span>
+            Maimai 排卡助手
+            <span class="w-4 h-4 rounded-full bg-orange-400 inline-block"></span>
+        </h1>
+        <p class="text-xs text-gray-500 mt-1">
+            Supabase 驱动 · 状态: <span :class="syncStatus === '已同步' ? 'text-green-500' : 'text-amber-500'">{{ syncStatus }}</span>
+            <br><span class="text-[10px] text-gray-400">（每日22:00自动清空当日数据）</span>
+        </p>
+    </header>
+
+    <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-cyan-400">
+        <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">正在游玩 / 霸机中</h2>
+        <div class="flex gap-2" v-if="playingList.length &gt; 0">
+            <div v-for="player in playingList" :key="player.id" class="flex-1 bg-blue-50 p-3 rounded-xl relative overflow-hidden">
+                <div class="font-bold text-blue-900 text-lg">{{ player.name }}</div>
+                <div class="text-xs text-blue-600 mt-1">张数/人数: {{ player.count }} | {{ player.time }} 上机</div>
+                <button @click="finishPlay(player.id)" class="absolute right-2 top-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-md shadow-sm hover:bg-blue-600">
+                    下机
+                </button>
+            </div>
+        </div>
+        <div v-else class="text-center py-4 text-gray-400 text-sm">
+            目前机台空闲，直接塞卡！
+        </div>
+    </section>
+
+    <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">排队队列 ({{ queue.length }} 组)</h2>
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">预计等待: {{ totalWaitTime }} 分钟</span>
+        </div>
+
+        <div class="divide-y divide-gray-100" v-if="queue.length &gt; 0">
+            <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" 
+                          :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">
+                        {{ index + 1 }}
+                    </span>
+                    <div>
+                        <div class="font-bold text-gray-800 text-base">
+                            {{ card.name }}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count }}张 · {{ card.createdAt }} 排</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button v-if="index === 0" @click="startPlay(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">
+                        上机
+                    </button>
+                    <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1">✏️</button>
+                    <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1">❌</button>
+                </div>
+            </div>
+        </div>
+        <div v-else class="text-center py-8 text-gray-400 text-sm">
+            暂无排卡，快来成为第一个！
+        </div>
+    </section>
+
+    <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-50">
+        <form @submit.prevent="submitCard" class="flex gap-2 items-center">
+            <input type="text" v-model="form.name" placeholder="输入昵称/卡片标记" required
+                   class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
+            
+            <select v-model="form.count" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-20">
+                <option :value="1">1张</option>
+                <option :value="2">2张</option>
+                <option :value="3">3张</option>
+                <option :value="4">4人同玩</option>
+            </select>
+
+            <button type="submit" class="bg-orange-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-md transition-transform">
+                <span v-if="isEditing">修改</span>
+                <span v-else>排卡</span>
+            </button>
+            <button type="button" v-if="isEditing" @click="cancelEdit" class="bg-gray-200 text-gray-600 text-sm px-3 py-2.5 rounded-xl">
+                取消
+            </button>
+        </form>
+    </footer>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+// ====== 已自动为你替换好 Supabase 凭证 ======
+const SUPABASE_URL = 'https://yeoirthgrsyaltakadog.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_EfAPV...'; // 这里请确保复制你完整的 Publishable key 字符串
+// ==============================================
+
+// 封装 Supabase 原生 API 请求方法
+const supabaseFetch = async (method, body = null) => {
+    const url = `${SUPABASE_URL}/rest/v1/maimai_data?id=eq.main_room`;
+    const headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+    };
+    if (method === 'PATCH') headers['Prefer'] = 'return=representation';
+
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(url, options);
+    return await res.json();
+};
+
+createApp({
+    setup() {
+        const queue = ref([]);
+        const playingList = ref([]);
+        const isEditing = ref(false);
+        const editingId = ref(null);
+        const syncStatus = ref('正在同步...');
+        const lastClearDate = ref(''); 
+
+        const form = ref({ name: '', count: 1 });
+
+        const totalWaitTime = computed(() => {
+            return queue.value.reduce((sum, item) => sum + (item.count * 12), 0);
+        });
+
+        const getNowTime = () => {
+            const now = new Date();
+            return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        };
+
+        const getNowDateStr = () => {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        };
+
+        // 从 Supabase 拉取最新排队数据
+        const fetchDataFromCloud = async () => {
+            try {
+                const data = await supabaseFetch('GET');
+                if (data && data.length &gt; 0) {
+                    const record = data[0];
+                    queue.value = record.queue || [];
+                    playingList.value = record.playing_list || [];
+                    lastClearDate.value = record.last_clear_date || '';
+                }
+
+                // 每日 22:00 自动重置数据逻辑
+                const now = new Date();
+                const currentHour = now.getHours();
+                const todayStr = getNowDateStr();
+
+                if (currentHour &gt;= 22 && lastClearDate.value !== todayStr) {
+                    queue.value = [];
+                    playingList.value = [];
+                    lastClearDate.value = todayStr;
+                    await pushDataToCloud();
+                }
+                syncStatus.value = '已同步';
+            } catch (error) {
+                console.error('拉取云端数据失败:', error);
+                syncStatus.value = '同步失败';
+            }
+        };
+
+        // 上传最新数据到 Supabase
+        const pushDataToCloud = async () => {
+            syncStatus.value = '正在上传...';
+            try {
+                const cleanData = {
+                    queue: JSON.parse(JSON.stringify(queue.value)),
+                    playing_list: JSON.parse(JSON.stringify(playingList.value)),
+                    last_clear_date: lastClearDate.value
+                };
+                await supabaseFetch('PATCH', cleanData);
+                syncStatus.value = '已同步';
+            } catch (error) {
+                console.error('更新云端数据失败:', error);
+                syncStatus.value = '同步错误';
+            }
+        };
+
+        // 提交排卡（添加/修改）
+        const submitCard = async () => {
+            const inputName = form.value.name.trim();
+            if (!inputName) return;
+
+            if (isEditing.value) {
+                const isNameExists = queue.value.some(c => c.id !== editingId.value && c.name.toLowerCase() === inputName.toLowerCase()) ||
+                                     playingList.value.some(p => p.id !== editingId.value && p.name.toLowerCase() === inputName.toLowerCase());
+                
+                if (isNameExists) {
+                    alert(`❌ 【${inputName}】已经在这个机台排卡了，不能重复排卡！`);
+                    return;
+                }
+
+                const card = queue.value.find(c => c.id === editingId.value);
+                if (card) {
+                    card.name = inputName;
+                    card.count = form.value.count;
+                }
+                isEditing.value = false;
+                editingId.value = null;
+            } else {
+                const isNameExists = queue.value.some(c => c.name.toLowerCase() === inputName.toLowerCase()) ||
+                                     playingList.value.some(p => p.name.toLowerCase() === inputName.toLowerCase());
+                
+                if (isNameExists) {
+                    alert(`❌ 【${inputName}】你已经排过卡或正在上机，请勿重复排卡！`);
+                    return;
+                }
+
+                queue.value.push({
+                    id: Date.now().toString(),
+                    name: inputName,
+                    count: form.value.count,
+                    createdAt: getNowTime()
+                });
+            }
+            form.value.name = '';
+            form.value.count = 1;
+            await pushDataToCloud(); 
+        };
+
+        const startPlay = async (id) => {
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index !== -1) {
+                const card = queue.value.splice(index, 1)[0];
+                playingList.value = [{
+                    id: card.id,
+                    name: card.name,
+                    count: card.count,
+                    time: getNowTime()
+                }];
+                await pushDataToCloud();
+            }
+        };
+
+        const finishPlay = async (id) => {
+            playingList.value = playingList.value.filter(p => p.id !== id);
+            await pushDataToCloud();
+        };
+
+        const removeCard = async (id) => {
+            if(confirm("确定要删除这张排卡吗？")) {
+                queue.value = queue.value.filter(c => c.id !== id);
+                await pushDataToCloud();
+            }
+        };
+
+        const editCard = (card) => {
+            isEditing.value = true;
+            editingId.value = card.id;
+            form.value.name = card.name;
+            form.value.count = card.count;
+        };
+
+        const cancelEdit = () => {
+            isEditing.value = false;
+            editingId.value = null;
+            form.value.name = '';
+            form.value.count = 1;
+        };
+
+        onMounted(() => {
+            fetchDataFromCloud();
+
+            // 每 4 秒自动和 Supabase 数据库同步一次
+            setInterval(() => {
+                if (!isEditing.value && document.activeElement.tagName !== 'INPUT') {
+                    fetchDataFromCloud();
+                }
+            }, 4000);
+        });
+
+        return {
+            queue, playingList, form, isEditing, totalWaitTime, syncStatus,
+            submitCard, startPlay, finishPlay, removeCard, editCard, cancelEdit
+        };
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>
