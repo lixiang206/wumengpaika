@@ -12,7 +12,7 @@
 </head>
 <body class="bg-gray-100 font-sans">
 
-<div id="app" v-cloak class="max-w-md mx-auto p-4 pb-24">
+<div id="app" v-cloak class="max-w-md mx-auto p-4 pb-28">
     <header class="text-center my-4">
         <h1 class="text-2xl font-bold text-gray-800 flex justify-center items-center gap-2">
             <span class="w-4 h-4 rounded-full bg-cyan-400 inline-block"></span>
@@ -62,18 +62,28 @@
             <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">预计等待: {{ totalWaitTime }} 分钟</span>
         </div>
         <div class="divide-y divide-gray-100" v-if="queue.length > 0">
-            <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
-                    <div>
-                        <div class="font-bold text-gray-800 text-base">{{ card.name }}</div>
-                        <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
+            <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
+                        <div>
+                            <div class="font-bold text-gray-800 text-base flex items-center gap-1">
+                                {{ card.name }}
+                                <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">迟到过</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-1.5 items-center">
+                        <button v-if="index === 0 && playingList.length < 2" @click="startPlay(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
+                        <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm" title="编辑">✏️</button>
+                        <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm" title="删除">❌</button>
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    <button v-if="index === 0 && playingList.length < 2" @click="startPlay(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
-                    <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1">✏️</button>
-                    <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1">❌</button>
+                
+                <div class="flex justify-end gap-2 text-[11px] pt-1">
+                    <button v-if="index > 0" @click="moveToTop(card.id)" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">🌟 顶上</button>
+                    <button v-if="index !== queue.length - 1" @click="moveToBottom(card.id)" class="text-orange-500 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded font-medium">⏳ 迟到末尾</button>
                 </div>
             </div>
         </div>
@@ -104,22 +114,17 @@ const { createApp, ref, computed, onMounted } = Vue;
 const SUPABASE_URL = 'https://yeoirthgrsyaltakadog.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_EfAPV9uDkGEG1ioa2MAfwQ_sfytAxgc';
 
-// 升级核心网络请求方法：使用极度稳定的 POST + Upsert 物理覆盖策略
+// 沿用极度稳定的 POST + Upsert 物理覆盖策略
 const supabaseFetch = async (method, body = null) => {
     let url = `${SUPABASE_URL}/rest/v1/maimai_data`;
-    
-    // 如果是读取数据，追加过滤标识
     if (method === 'GET') {
         url += `?id=eq.main_room`;
     }
-
     const headers = {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json'
     };
-
-    // 强行启用覆盖写入机制
     if (method === 'POST') {
         headers['Prefer'] = 'resolution=merge-duplicates';
     }
@@ -149,10 +154,6 @@ createApp({
             const now = new Date();
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         };
-        const getNowDateStr = () => {
-            const now = new Date();
-            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        };
 
         const fetchDataFromCloud = async () => {
             try {
@@ -173,19 +174,38 @@ createApp({
         const pushDataToCloud = async () => {
             syncStatus.value = '正在上传...';
             try {
-                // 构造包含强绑定主键 id 的强覆盖数据包
                 const payload = {
                     id: 'main_room',
                     queue: JSON.parse(JSON.stringify(queue.value)),
                     playing_list: JSON.parse(JSON.stringify(playingList.value)),
                     last_clear_date: lastClearDate.value
                 };
-                // 使用 POST 提交，Supabase 会自动根据唯一 id 决定是新建还是直接全量覆盖
                 await supabaseFetch('POST', payload);
                 syncStatus.value = '已同步';
             } catch (error) {
                 console.error(error);
                 syncStatus.value = '写入失败';
+            }
+        };
+
+        // 新增功能 1：一键置顶（后面的人到场了直接顶上）
+        const moveToTop = async (id) => {
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index > 0) {
+                const targetCard = queue.value.splice(index, 1)[0];
+                queue.value.unshift(targetCard); // 塞到队伍最前面
+                await pushDataToCloud();
+            }
+        };
+
+        // 新增功能 2：一键移至末尾（玩家迟到，打入冷宫到队尾）
+        const moveToBottom = async (id) => {
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index !== -1 && index !== queue.value.length - 1) {
+                const targetCard = queue.value.splice(index, 1)[0];
+                targetCard.isMovedToBottom = true; // 给个迟到标签
+                queue.value.push(targetCard); // 塞到队伍最后面
+                await pushDataToCloud();
             }
         };
 
@@ -198,7 +218,7 @@ createApp({
                 isEditing.value = false;
                 editingId.value = null;
             } else {
-                queue.value.push({ id: Date.now().toString(), name: inputName, count: form.value.count, createdAt: getNowTime() });
+                queue.value.push({ id: Date.now().toString(), name: inputName, count: form.value.count, createdAt: getNowTime(), isMovedToBottom: false });
             }
             form.value.name = ''; form.value.count = 1;
             await pushDataToCloud(); 
@@ -240,15 +260,14 @@ createApp({
 
         onMounted(() => {
             fetchDataFromCloud();
-            // 每 4 秒无感拉取云端最新数据，实现手机、电脑多端数据完美同步
             setInterval(() => {
-                if (!isEditing.value && document.activeElement.tagName !== 'INPUT') {
+                if (!isEditing.value && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     fetchDataFromCloud();
                 }
             }, 4000);
         });
 
-        return { queue, playingList, form, isEditing, totalWaitTime, syncStatus, submitCard, startPlay, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay };
+        return { queue, playingList, form, isEditing, totalWaitTime, syncStatus, submitCard, startPlay, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom };
     }
 }).mount('#app');
 </script>
