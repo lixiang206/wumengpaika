@@ -29,7 +29,12 @@
     <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-cyan-400">
         <div class="flex justify-between items-center mb-3">
             <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">正在游玩 / 霸机中</h2>
-            <button v-if="playingList.length > 0" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
+            <div class="flex items-center gap-3">
+                <button v-if="playingList.length > 0" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
+                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">
+                    🔒 清空整个板子
+                </button>
+            </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
             <div class="bg-blue-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-blue-100">
@@ -114,28 +119,21 @@ const { createApp, ref, computed, onMounted } = Vue;
 const SUPABASE_URL = 'https://yeoirthgrsyaltakadog.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_EfAPV9uDkGEG1ioa2MAfwQ_sfytAxgc';
 
-// 沿用极度稳定的 POST + Upsert 物理覆盖策略
 const supabaseFetch = async (method, body = null) => {
     let url = `${SUPABASE_URL}/rest/v1/maimai_data`;
-    if (method === 'GET') {
-        url += `?id=eq.main_room`;
-    }
+    if (method === 'GET') url += `?id=eq.main_room`;
     const headers = {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json'
     };
-    if (method === 'POST') {
-        headers['Prefer'] = 'resolution=merge-duplicates';
-    }
+    if (method === 'POST') headers['Prefer'] = 'resolution=merge-duplicates';
 
     const options = { method: method, headers: headers };
     if (body) options.body = JSON.stringify(body);
 
     const res = await fetch(url, options);
-    if (!res.ok) {
-        throw new Error(`HTTP Error: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
     return res.status !== 204 ? await res.json() : null;
 };
 
@@ -188,23 +186,36 @@ createApp({
             }
         };
 
-        // 新增功能 1：一键置顶（后面的人到场了直接顶上）
+        // 密码锁清空所有数据（包括正在游玩和排队队列）
+        const clearAllDataWithPassword = async () => {
+            const password = prompt("请输入管理员密码以清空所有数据:");
+            if (password === 'lixiang2006') {
+                if (confirm("警告：这将清空当前正在游玩的机位以及全部排队队列！确定吗？")) {
+                    queue.value = [];
+                    playingList.value = [];
+                    await pushDataToCloud();
+                    alert("数据已全部清空！");
+                }
+            } else if (password !== null) {
+                alert("密码错误，拒绝清空！");
+            }
+        };
+
         const moveToTop = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index > 0) {
                 const targetCard = queue.value.splice(index, 1)[0];
-                queue.value.unshift(targetCard); // 塞到队伍最前面
+                queue.value.unshift(targetCard);
                 await pushDataToCloud();
             }
         };
 
-        // 新增功能 2：一键移至末尾（玩家迟到，打入冷宫到队尾）
         const moveToBottom = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index !== -1 && index !== queue.value.length - 1) {
                 const targetCard = queue.value.splice(index, 1)[0];
-                targetCard.isMovedToBottom = true; // 给个迟到标签
-                queue.value.push(targetCard); // 塞到队伍最后面
+                targetCard.isMovedToBottom = true;
+                queue.value.push(targetCard);
                 await pushDataToCloud();
             }
         };
@@ -267,7 +278,7 @@ createApp({
             }, 4000);
         });
 
-        return { queue, playingList, form, isEditing, totalWaitTime, syncStatus, submitCard, startPlay, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom };
+        return { queue, playingList, form, isEditing, totalWaitTime, syncStatus, submitCard, startPlay, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
     }
 }).mount('#app');
 </script>
