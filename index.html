@@ -91,4 +91,251 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <button v-if="index === 0 && playingList.length < 2" @click="startPlay(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-
+                    <button v-if="index === 0 && playingList.length < 2" @click="startPlay(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">
+                        上机
+                    </button>
+                    <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1">✏️</button>
+                    <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1">❌</button>
+                </div>
+            </div>
+        </div>
+        <div v-else class="text-center py-8 text-gray-400 text-sm">
+            暂无排卡，快来成为第一个！
+        </div>
+    </section>
+
+    <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-50">
+        <form @submit.prevent="submitCard" class="flex gap-2 items-center">
+            <input type="text" v-model="form.name" placeholder="输入昵称/多人用+号隔开" required
+                   class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
+            
+            <select v-model="form.count" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24">
+                <option :value="1">1张卡</option>
+                <option :value="2">2张卡</option>
+                <option :value="3">3张卡</option>
+                <option :value="4">4人同玩</option>
+            </select>
+
+            <button type="submit" class="bg-orange-500 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md transition-transform">
+                <span v-if="isEditing">修改</span>
+                <span v-else>排卡</span>
+            </button>
+            <button type="button" v-if="isEditing" @click="cancelEdit" class="bg-gray-200 text-gray-600 text-sm px-2.5 py-2.5 rounded-xl">
+                取消
+            </button>
+        </form>
+    </footer>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+// ====== 你的真实 Supabase 凭证 ======
+const SUPABASE_URL = 'https://yeoirthgrsyaltakadog.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_EfAPV9uDkGEG1ioa2MAfwQ_sfytAxgc';
+// ==============================================
+
+const supabaseFetch = async (method, body = null) => {
+    const url = `${SUPABASE_URL}/rest/v1/maimai_data?id=eq.main_room`;
+    const headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+    };
+    if (method === 'PATCH') headers['Prefer'] = 'return=representation';
+
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(url, options);
+    return await res.json();
+};
+
+createApp({
+    setup() {
+        const queue = ref([]);
+        const playingList = ref([]); // 长度最大为 2
+        const isEditing = ref(false);
+        const editingId = ref(null);
+        const syncStatus = ref('正在同步...');
+        const lastClearDate = ref(''); 
+
+        const form = ref({ name: '', count: 1 });
+
+        const totalWaitTime = computed(() => {
+            return queue.value.reduce((sum, item) => sum + (item.count * 12), 0);
+        });
+
+        const getNowTime = () => {
+            const now = new Date();
+            return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        };
+
+        const getNowDateStr = () => {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        };
+
+        const fetchDataFromCloud = async () => {
+            try {
+                const data = await supabaseFetch('GET');
+                if (data && data.length > 0) {
+                    const record = data[0];
+                    queue.value = record.queue || [];
+                    playingList.value = record.playing_list || [];
+                    lastClearDate.value = record.last_clear_date || '';
+                }
+
+                const now = new Date();
+                const currentHour = now.getHours();
+                const todayStr = getNowDateStr();
+
+                if (currentHour >= 22 && lastClearDate.value !== todayStr) {
+                    queue.value = [];
+                    playingList.value = [];
+                    lastClearDate.value = todayStr;
+                    await pushDataToCloud();
+                }
+                syncStatus.value = '已同步';
+            } catch (error) {
+                console.error('拉取云端数据失败:', error);
+                syncStatus.value = '同步失败';
+            }
+        };
+
+        const pushDataToCloud = async () => {
+            syncStatus.value = '正在上传...';
+            try {
+                const cleanData = {
+                    queue: JSON.parse(JSON.stringify(queue.value)),
+                    playing_list: JSON.parse(JSON.stringify(playingList.value)),
+                    last_clear_date: lastClearDate.value
+                };
+                await supabaseFetch('PATCH', cleanData);
+                syncStatus.value = '已同步';
+            } catch (error) {
+                console.error('更新云端数据失败:', error);
+                syncStatus.value = '同步错误';
+            }
+        };
+
+        const submitCard = async () => {
+            const inputName = form.value.name.trim();
+            if (!inputName) return;
+
+            if (isEditing.value) {
+                const card = queue.value.find(c => c.id === editingId.value);
+                if (card) {
+                    card.name = inputName;
+                    card.count = form.value.count;
+                }
+                isEditing.value = false;
+                editingId.value = null;
+            } else {
+                queue.value.push({
+                    id: Date.now().toString(),
+                    name: inputName,
+                    count: form.value.count,
+                    createdAt: getNowTime()
+                });
+            }
+            form.value.name = '';
+            form.value.count = 1;
+            await pushDataToCloud(); 
+        };
+
+        // 队列第一名组上机
+        const startPlay = async (id) => {
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index !== -1) {
+                const card = queue.value.splice(index, 1)[0];
+                const nowTime = getNowTime();
+
+                // 智能检测名字是否包含 + 或 /，用于双人一起排队的情况自动拆分机位
+                const names = card.name.split(/[+\/／＋]/);
+                
+                if (names.length >= 2 && playingList.value.length === 0) {
+                    // 如果名字带有结合符，且当前机台全空，直接分填 1P 和 2P
+                    playingList.value = [
+                        { name: names[0].trim(), count: Math.ceil(card.count/2), time: nowTime },
+                        { name: names[1].trim(), count: Math.floor(card.count/2) || 1, time: nowTime }
+                    ];
+                } else {
+                    // 普通情况下，填入目前空的第一个机位
+                    if (playingList.value.length < 2) {
+                        playingList.value.push({
+                            name: card.name,
+                            count: card.count,
+                            time: nowTime
+                        });
+                    }
+                }
+                await pushDataToCloud();
+            }
+        };
+
+        // 2P 机位空闲时，1P 玩家可以手动邀请路人或朋友结伴上机
+        const inviteToPlay = async () => {
+            const guestName = prompt("请输入结伴上机的玩家昵称:");
+            if (guestName && guestName.trim()) {
+                playingList.value.push({
+                    name: guestName.trim(),
+                    count: 1,
+                    time: getNowTime()
+                });
+                await pushDataToCloud();
+            }
+        };
+
+        // 单个机位下机
+        const finishPlaySingle = async (index) => {
+            playingList.value.splice(index, 1);
+            await pushDataToCloud();
+        };
+
+        // 全员下机
+        const finishPlayAll = async () => {
+            playingList.value = [];
+            await pushDataToCloud();
+        };
+
+        const removeCard = async (id) => {
+            if(confirm("确定要删除这张排卡吗？")) {
+                queue.value = queue.value.filter(c => c.id !== id);
+                await pushDataToCloud();
+            }
+        };
+
+        const editCard = (card) => {
+            isEditing.value = true;
+            editingId.value = card.id;
+            form.value.name = card.name;
+            form.value.count = card.count;
+        };
+
+        const cancelEdit = () => {
+            isEditing.value = false;
+            editingId.value = null;
+            form.value.name = '';
+            form.value.count = 1;
+        };
+
+        onMounted(() => {
+            fetchDataFromCloud();
+            setInterval(() => {
+                if (!isEditing.value && document.activeElement.tagName !== 'INPUT') {
+                    fetchDataFromCloud();
+                }
+            }, 4000);
+        });
+
+        return {
+            queue, playingList, form, isEditing, totalWaitTime, syncStatus,
+            submitCard, startPlay, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay
+        };
+    }
+}).mount('#app');
+</script>
+
+</body>
+</html>
