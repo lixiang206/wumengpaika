@@ -262,20 +262,33 @@
             <div class="p-4 overflow-y-auto text-xs text-gray-600 space-y-4 leading-relaxed">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">一、核心规则（必读）</h3>
-                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:30 之后，系统会自动清空云端的所有队列、上机状态与出勤总人数。</p>
-                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 开启全线禁排。</p>
+                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:30 之后，系统会自动清空云端的所有队列和上机状态，无需人工每天手动还原。</p>
+                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 为机厅休息禁排时段。此期间底部输入栏将被强行锁定，无法进行任何排卡和修改操作。</p>
                 </div>
                 <hr class="border-gray-100">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">二、舞萌 Maimai 排卡逻辑</h3>
-                    <p>1. 所有人都有自由表达和点选【拼机】或【单刷】的权利。</p>
-                    <p>2. 系统计算整个队列耗时，仅依据排在第 1 位的玩家的选择进行全局判定。</p>
+                    <p>1. 底部输入昵称、选择卡数后点“排卡”即可入队。如果是多人结伴同玩，请用 <b class="text-gray-800 font-bold">+</b> 或 <b class="text-gray-800 font-bold">/</b> 符号隔开（例如：<span class="bg-gray-100 px-1 py-0.5 rounded">张三+李四</span>）。</p>
+                    <p class="mt-1">2. 队列第一组点击“上机”时，若名字带有加号且当前1P和2P都空闲，系统会<b>智能识别并自动把两人同时分发</b>上机！如果位置不够，可以点击右侧的“邀请上机”加人。</p>
+                    <p class="mt-1">3. 如果排卡的人暂时不在，可以点击<b>“迟到末尾”</b>，该卡组会移到队尾并自动标记“迟到过”。若需要紧急插队调整，可以点击<b>“顶上”</b>一键置顶。</p>
                 </div>
                 <hr class="border-gray-100">
                 <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">三、出勤统计功能</h3>
-                    <p>1. 本功能已经彻底解除繁琐的“绑定花名册”限制，不再按人头进行累加录入。</p>
-                    <p>2. 支持管理员或玩家在此板块直接敲入具体的“数字”或通过加减号快捷调节，直接呈现机厅内的实时总人数！</p>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">三、中二节奏 CHUNITHM 逻辑</h3>
+                    <p>1. 中二节奏两台机器互不干扰，支持两个<b>独立的单人机位</b>进行并行动作。</p>
+                    <p class="mt-1">2. 队首玩家点击“上机”后，系统会精密侦测 1 号机和 2 号机哪个空闲，并按照最优解自动将你塞入空座位。点击各自机位的“下机”即可释放位置。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">四、出勤张数统计逻辑</h3>
+                    <p>1. 该板块专门统计今日在奇妙之城机厅的总卡数和总出勤人数。</p>
+                    <p class="mt-1">2. 输入你的昵称和带卡数量，点击“报到”。上方的大屏看板会<b>自动累加并高亮渲染</b>当前机厅的总带卡基数，方便大家评估机厅拥挤度。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">五、资源节约技术说明</h3>
+                    <p>1. 网页引入了高级浏览器浏览器会话级缓存（Session Cache）。只要你不关闭这个排卡网页标签页，<b>所有数据均在本地比对，绝不白白刷新消耗服务器流量</b>。</p>
+                    <p class="mt-1">2. 只有当你有实质的排卡、下机、置顶变动时，才会产生网络交互，请放心流畅使用！</p>
                 </div>
             </div>
             <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
@@ -283,7 +296,7 @@
             </div>
         </div>
     </div>
-
+    
     <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-40">
         <div v-if="currentTab === 'attendance'" class="text-center text-xs py-2 text-gray-500 font-medium">
             💡 请在上方直接进行总人数的数字加减操作
