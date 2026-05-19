@@ -27,11 +27,18 @@
     </header>
 
     <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
-        <img src="zhuye.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <img src="img/banner.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
-            <span>🖼️ 枕梦提示：请在项目根目录新建 img 文件夹</span>
-            <span class="text-[10px] opacity-70 mt-1">并将图片命名为 banner.jpg 放入即可</span>
+            <span>🖼️ 制作人：枕梦 | 图片放于 img/banner.jpg</span>
         </div>
+    </div>
+
+    <div v-if="isNightRestriction" class="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-xs flex items-center gap-2 font-medium">
+        <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        </span>
+        当前处于夜间休息时段 (23:00 - 09:00)，系统已暂停排卡数据上传。
     </div>
 
     <div>
@@ -40,7 +47,7 @@
         <div :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out p-5 flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
-                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择版块</span>
+                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择机种版块</span>
                     <button @click="toggleMenu" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
                 </div>
                 
@@ -52,13 +59,15 @@
                         <span class="w-2 h-2 rounded-full bg-indigo-600"></span> CHUNITHM 中二排卡
                     </button>
                     <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤有多少张卡
+                        <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤卡数统计
                     </button>
                 </div>
             </div>
             
-            <div class="text-[10px] text-gray-400 border-t pt-3 border-gray-100">
-                制作人：枕梦 · 每日22:00重置数据
+            <div class="text-[10px] text-gray-400 border-t pt-3 border-gray-100 space-y-1">
+                <div>制作人：枕梦</div>
+                <div class="text-orange-500 font-medium">每晚 22:00 数据准时自动重置清空</div>
+                <div class="text-red-400">23:00 - 次日 09:00 开启全线禁排</div>
             </div>
         </div>
     </div>
@@ -68,7 +77,7 @@
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Maimai 正在游玩</h2>
                 <div class="flex items-center gap-3">
-                    <button v-if="playingList.length > 0" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
+                    <button v-if="playingList.length > 0 && !isNightRestriction" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
                     <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空整个板子</button>
                 </div>
             </div>
@@ -80,7 +89,7 @@
                         <div class="text-[10px] text-blue-500 mt-0.5">{{ playingList[0].count }}张 · {{ playingList[0].time }}上</div>
                     </div>
                     <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
-                    <button v-if="playingList[0]" @click="finishPlaySingle(0)" class="absolute right-2 top-2 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-blue-600">下机</button>
+                    <button v-if="playingList[0] && !isNightRestriction" @click="finishPlaySingle(0)" class="absolute right-2 top-2 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-blue-600">下机</button>
                 </div>
                 <div class="bg-orange-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-orange-100">
                     <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-orange-300 tracking-wider">2P 右机位</div>
@@ -88,11 +97,11 @@
                         <div class="font-bold text-orange-900 text-base truncate">{{ playingList[1].name }}</div>
                         <div class="text-[10px] text-orange-500 mt-0.5">{{ playingList[1].count }}张 · {{ playingList[1].time }}上</div>
                     </div>
-                    <div v-else-if="playingList.length === 1" class="text-center my-auto py-1">
+                    <div v-else-if="playingList.length === 1 && !isNightRestriction" class="text-center my-auto py-1">
                         <button @click="inviteToPlay" class="text-[11px] bg-orange-400 text-white px-2 py-1 rounded-lg shadow-sm font-medium hover:bg-orange-500">➕ 邀请上机</button>
                     </div>
                     <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
-                    <button v-if="playingList[1]" @click="finishPlaySingle(1)" class="absolute right-2 top-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600">下机</button>
+                    <button v-if="playingList[1] && !isNightRestriction" @click="finishPlaySingle(1)" class="absolute right-2 top-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600">下机</button>
                 </div>
             </div>
         </section>
@@ -115,13 +124,13 @@
                                 <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
                             </div>
                         </div>
-                        <div class="flex gap-1.5 items-center">
+                        <div class="flex gap-1.5 items-center" v-if="!isNightRestriction">
                             <button v-if="index === 0 && playingList.length < 2" @click="startPlayMaimai(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
                             <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
                             <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm">❌</button>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 text-[11px] pt-1">
+                    <div class="flex justify-end gap-2 text-[11px] pt-1" v-if="!isNightRestriction">
                         <button v-if="index > 0" @click="moveToTop(card.id)" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">🌟 顶上</button>
                         <button v-if="index !== queue.length - 1" @click="moveToBottom(card.id)" class="text-orange-500 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded font-medium">⏳ 迟到末尾</button>
                     </div>
@@ -145,7 +154,7 @@
                         <div class="text-[10px] text-indigo-500 mt-0.5">{{ playingList[0].count }}张 · {{ playingList[0].time }}上</div>
                     </div>
                     <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
-                    <button v-if="playingList[0]" @click="finishChunithmMachine(0)" class="absolute right-2 top-2 bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-indigo-700">下机</button>
+                    <button v-if="playingList[0] && !isNightRestriction" @click="finishChunithmMachine(0)" class="absolute right-2 top-2 bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-indigo-700">下机</button>
                 </div>
                 <div class="bg-purple-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-purple-100">
                     <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-purple-400 tracking-wider">2号机 (单人)</div>
@@ -154,7 +163,7 @@
                         <div class="text-[10px] text-purple-500 mt-0.5">{{ playingList[1].count }}张 · {{ playingList[1].time }}上</div>
                     </div>
                     <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
-                    <button v-if="playingList[1]" @click="finishChunithmMachine(1)" class="absolute right-2 top-2 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-purple-700">下机</button>
+                    <button v-if="playingList[1] && !isNightRestriction" @click="finishChunithmMachine(1)" class="absolute right-2 top-2 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-purple-700">下机</button>
                 </div>
             </div>
         </section>
@@ -177,13 +186,13 @@
                                 <div class="text-xs text-gray-400 mt-0.5">定额: {{ card.count }}张卡 · {{ card.createdAt }} 排</div>
                             </div>
                         </div>
-                        <div class="flex gap-1.5 items-center">
+                        <div class="flex gap-1.5 items-center" v-if="!isNightRestriction">
                             <button v-if="index === 0 && (!playingList[0] || !playingList[1])" @click="startPlayChunithm(card.id)" class="bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
                             <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
                             <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm">❌</button>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 text-[11px] pt-1">
+                    <div class="flex justify-end gap-2 text-[11px] pt-1" v-if="!isNightRestriction">
                         <button v-if="index > 0" @click="moveToTop(card.id)" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">🌟 顶上</button>
                         <button v-if="index !== queue.length - 1" @click="moveToBottom(card.id)" class="text-orange-500 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded font-medium">⏳ 迟到末尾</button>
                     </div>
@@ -221,7 +230,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="text-sm font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md">带卡: {{ person.count }}张</span>
-                        <button @click="removeCard(person.id)" class="text-red-400 text-xs hover:text-red-600">撤销</button>
+                        <button v-if="!isNightRestriction" @click="removeCard(person.id)" class="text-red-400 text-xs hover:text-red-600">撤销</button>
                     </div>
                 </div>
             </div>
@@ -231,15 +240,15 @@
 
     <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-40">
         <form @submit.prevent="submitCard" class="flex gap-2 items-center">
-            <input type="text" v-model="form.name" :placeholder="currentTab === 'attendance' ? '输入出勤昵称...' : '输入昵称/多人用+号隔开'" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
-            <select v-model="form.count" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24">
+            <input type="text" v-model="form.name" :disabled="isNightRestriction" :placeholder="isNightRestriction ? '夜间机厅休息，暂停排卡' : (currentTab === 'attendance' ? '输入出勤昵称...' : '输入昵称/多人用+号隔开')" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
+            <select v-model="form.count" :disabled="isNightRestriction" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24 disabled:bg-gray-200 disabled:text-gray-400">
                 <option :value="1">1张卡</option>
                 <option :value="2">2张卡</option>
                 <option :value="3">3张卡</option>
                 <option v-if="currentTab === 'maimai'" :value="4">4人同玩</option>
                 <option v-if="currentTab === 'attendance'" :value="4">4张卡</option>
             </select>
-            <button type="submit" :class="tabColorClass" class="text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md transition-colors">
+            <button type="submit" :disabled="isNightRestriction" :class="isNightRestriction ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : tabColorClass" class="text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md transition-colors">
                 <span>{{ isEditing ? '修改' : (currentTab === 'attendance' ? '报到' : '排卡') }}</span>
             </button>
             <button type="button" v-if="isEditing" @click="cancelEdit" class="bg-gray-200 text-gray-600 text-sm px-2.5 py-2.5 rounded-xl">取消</button>
@@ -278,7 +287,7 @@ const supabaseFetch = async (method, tabId, body = null) => {
 createApp({
     setup() {
         const currentTab = ref('maimai'); 
-        const isMenuOpen = ref(false); // 控制左侧汉堡抽屉菜单显隐
+        const isMenuOpen = ref(false); 
         const queue = ref([]);
         const playingList = ref([]);
         const isEditing = ref(false);
@@ -286,7 +295,12 @@ createApp({
         const lastClearDate = ref(''); 
         const form = ref({ name: '', count: 1 });
 
-        // 动态计算顶部标题
+        // 🧠 核心优化：动态计算当前是否属于晚上11点到早上9点之间的禁排时段
+        const isNightRestriction = computed(() => {
+            const hour = new Date().getHours();
+            return hour >= 23 || hour < 9; 
+        });
+
         const currentTabTitle = computed(() => {
             if (currentTab.value === 'maimai') return 'Maimai 排卡 - 奇妙之城';
             if (currentTab.value === 'chunithm') return 'CHUNITHM 排卡 - 奇妙之城';
@@ -306,8 +320,30 @@ createApp({
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         };
 
-        const toggleMenu = () => {
-            isMenuOpen.value = !isMenuOpen.value;
+        const getTodayDateString = () => {
+            const now = new Date();
+            return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+        };
+
+        const toggleMenu = () => { isMenuOpen.value = !isMenuOpen.value; };
+
+        // 🧠 核心优化：每次载入数据时，前置检测是否已过晚上10点，如果是且今日未清空，自动触发重置
+        const checkAndExecuteAutoClear = async (record) => {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const todayStr = getTodayDateString();
+
+            // 如果当前时间已经到了 22 点或以后，且数据库里记录的上一次清空日期不是今天
+            if (currentHour >= 22 && record.last_clear_date !== todayStr) {
+                queue.value = [];
+                playingList.value = [];
+                lastClearDate.value = todayStr;
+                
+                // 自动对云端及浏览器发起清空覆盖，解决晚上10点不清空的问题
+                await pushDataToCloud();
+                return true;
+            }
+            return false;
         };
 
         const loadFromCacheOrCloud = async () => {
@@ -316,9 +352,13 @@ createApp({
 
             if (cachedData) {
                 const record = JSON.parse(cachedData);
-                queue.value = record.queue || [];
-                playingList.value = record.playing_list || [];
-                lastClearDate.value = record.last_clear_date || '';
+                // 即使读缓存也需要过一遍自动清空时间检查
+                const cleared = await checkAndExecuteAutoClear(record);
+                if (!cleared) {
+                    queue.value = record.queue || [];
+                    playingList.value = record.playing_list || [];
+                    lastClearDate.value = record.last_clear_date || '';
+                }
             } else {
                 await fetchDataFromCloud();
             }
@@ -329,10 +369,13 @@ createApp({
                 const data = await supabaseFetch('GET', currentTab.value);
                 if (data && data.length > 0) {
                     const record = data[0];
-                    queue.value = record.queue || [];
-                    playingList.value = record.playing_list || [];
-                    lastClearDate.value = record.last_clear_date || '';
-                    sessionStorage.setItem(`cache_${getRoomId(currentTab.value)}`, JSON.stringify(record));
+                    const cleared = await checkAndExecuteAutoClear(record);
+                    if (!cleared) {
+                        queue.value = record.queue || [];
+                        playingList.value = record.playing_list || [];
+                        lastClearDate.value = record.last_clear_date || '';
+                        sessionStorage.setItem(`cache_${getRoomId(currentTab.value)}`, JSON.stringify(record));
+                    }
                 }
             } catch (error) {
                 console.error("数据加载失败", error);
@@ -357,7 +400,7 @@ createApp({
 
         const switchTab = (tabName) => {
             currentTab.value = tabName;
-            isMenuOpen.value = false; // 切换版块后自动收起左侧菜单
+            isMenuOpen.value = false; 
             queue.value = [];
             playingList.value = [];
             cancelEdit();
@@ -378,26 +421,9 @@ createApp({
             }
         };
 
-        const moveToTop = async (id) => {
-            const index = queue.value.findIndex(c => c.id === id);
-            if (index > 0) {
-                const targetCard = queue.value.splice(index, 1)[0];
-                queue.value.unshift(targetCard);
-                await pushDataToCloud();
-            }
-        };
-
-        const moveToBottom = async (id) => {
-            const index = queue.value.findIndex(c => c.id === id);
-            if (index !== -1 && index !== queue.value.length - 1) {
-                const targetCard = queue.value.splice(index, 1)[0];
-                targetCard.isMovedToBottom = true;
-                queue.value.push(targetCard);
-                await pushDataToCloud();
-            }
-        };
-
+        // 🧠 核心优化：在所有涉及修改排卡数据的函数最前面塞入熔断保护，防止夜间写入
         const submitCard = async () => {
+            if (isNightRestriction.value) { alert("晚上23:00至次日09:00期间禁止上传排卡数据！"); return; }
             const inputName = form.value.name.trim();
             if (!inputName) return;
             if (isEditing.value) {
@@ -413,6 +439,7 @@ createApp({
         };
 
         const startPlayMaimai = async (id) => {
+            if (isNightRestriction.value) return;
             const index = queue.value.findIndex(c => c.id === id);
             if (index !== -1) {
                 const card = queue.value.splice(index, 1)[0];
@@ -433,6 +460,7 @@ createApp({
         };
 
         const startPlayChunithm = async (id) => {
+            if (isNightRestriction.value) return;
             const index = queue.value.findIndex(c => c.id === id);
             if (index !== -1) {
                 const card = queue.value.splice(index, 1)[0];
@@ -449,12 +477,14 @@ createApp({
         };
 
         const finishChunithmMachine = async (machineIndex) => {
+            if (isNightRestriction.value) return;
             playingList.value[machineIndex] = null;
             if (!playingList.value[0] && !playingList.value[1]) playingList.value = [];
             await pushDataToCloud();
         };
 
         const inviteToPlay = async () => {
+            if (isNightRestriction.value) return;
             const guestName = prompt("请输入结伴上机的玩家昵称:");
             if (guestName && guestName.trim()) {
                 playingList.value.push({ name: guestName.trim(), count: 1, time: getNowTime() });
@@ -462,10 +492,32 @@ createApp({
             }
         };
 
-        const finishPlaySingle = async (index) => { playingList.value.splice(index, 1); await pushDataToCloud(); };
-        const finishPlayAll = async () => { playingList.value = []; await pushDataToCloud(); };
-        const removeCard = async (id) => { if(confirm("确定要移除或撤销吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
-        const editCard = (card) => { isEditing.value = true; editingId.value = card.id; form.value.name = card.name; form.value.count = card.count; };
+        const moveToTop = async (id) => {
+            if (isNightRestriction.value) return;
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index > 0) {
+                const targetCard = queue.value.splice(index, 1)[0];
+                queue.value.unshift(targetCard);
+                await pushDataToCloud();
+            }
+        };
+
+        const moveToBottom = async (id) => {
+            if (isNightRestriction.value) return;
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index !== -1 && index !== queue.value.length - 1) {
+                const targetCard = queue.value.splice(index, 1)[0];
+                targetCard.isMovedToBottom = true;
+                queue.value.push(targetCard);
+                await pushDataToCloud();
+            }
+        };
+
+        const finishPlaySingle = async (index) => { if (isNightRestriction.value) return; playingList.value.splice(index, 1); await pushDataToCloud(); };
+        const finishPlayAll = async () => { if (isNightRestriction.value) return; playingList.value = []; await pushDataToCloud(); };
+        const removeCard = async (id) => { if (isNightRestriction.value) return; if(confirm("确定要移除或撤销吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
+        
+        const editCard = (card) => { if (isNightRestriction.value) return; isEditing.value = true; editingId.value = card.id; form.value.name = card.name; form.value.count = card.count; };
         const cancelEdit = () => { isEditing.value = false; editingId.value = null; form.value.name = ''; form.value.count = 1; };
 
         onMounted(() => {
@@ -477,7 +529,7 @@ createApp({
             }, 5000);
         });
 
-        return { currentTab, isMenuOpen, currentTabTitle, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, toggleMenu, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
+        return { currentTab, isMenuOpen, currentTabTitle, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, isNightRestriction, toggleMenu, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
     }
 }).mount('#app');
 </script>
