@@ -27,7 +27,7 @@
     </header>
 
     <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
-        <img src="img/banner.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <img src="zhuye.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
             <span>🖼️ 制作人：枕梦 | 图片放于 img/banner.jpg</span>
         </div>
@@ -47,7 +47,7 @@
         <div :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out p-5 flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
-                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择机种版块</span>
+                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择游玩的游戏</span>
                     <button @click="toggleMenu" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
                 </div>
                 
@@ -56,7 +56,7 @@
                         <span class="w-2 h-2 rounded-full bg-orange-500"></span> 舞萌 Maimai 排卡
                     </button>
                     <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> CHUNITHM 中二排卡
+                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> 中二 CHUNITHM 排卡
                     </button>
                     <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤卡数统计
@@ -270,7 +270,7 @@
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">四、出勤张数统计逻辑</h3>
                     <p>1. 该板块专门统计今日在奇妙之城机厅的总卡数和总出勤人数。</p>
-                    <p class="mt-1">2. 输入你的昵称 and 带卡数量，点击“报到”。上方的大屏看板会<b>自动累加并高亮渲染</b>当前机厅的总带卡基数，方便大家评估机厅拥挤度。</p>
+                    <p class="mt-1">2. 输入你的昵称和带卡数量，点击“报到”。上方的大屏看板会<b>自动累加并高亮渲染</b>当前机厅的总带卡基数，方便大家评估机厅拥挤度。</p>
                 </div>
             </div>
             <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
@@ -412,7 +412,6 @@ createApp({
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    // 🔒 动态接收从云端下发的密码密文
                     if (record.admin_password) {
                         cloudPasswordHash.value = record.admin_password;
                     }
@@ -438,7 +437,7 @@ createApp({
                     queue: JSON.parse(JSON.stringify(queue.value)),
                     playing_list: JSON.parse(JSON.stringify(playingList.value)),
                     last_clear_date: lastClearDate.value,
-                    admin_password: cloudPasswordHash.value // 保持密码字段不丢失
+                    admin_password: cloudPasswordHash.value
                 };
                 sessionStorage.setItem(`cache_${roomId}`, JSON.stringify(payload));
                 await supabaseFetch('POST', currentTab.value, payload);
@@ -456,28 +455,31 @@ createApp({
             loadFromCacheOrCloud();
         };
 
-        // 🔒 经过多重防错改良的管理员清空逻辑
+        // 🔒 精密级、不依赖云端返回的无感通关核心逻辑
         const clearAllDataWithPassword = async () => {
             const password = prompt("请输入管理员密码以清空该版块数据:");
             if (password !== null) {
                 const cleanPassword = password.trim(); 
                 
-                // 1. 本地标准 MD5 值
+                // 计算当前输入的 MD5
                 const inputHash = md5(cleanPassword);
                 
-                // 2. 取出云端值并预清洗
-                const rawCloudHash = cloudPasswordHash.value ? cloudPasswordHash.value.trim().toLowerCase() : '';
+                // 本地硬编码的核心安全特征列表
+                const standardHash32 = '3fbc5564850fa978debfd4ff97dd461f'; // 标准32位密文
+                const specialHash31 = 'fbc5564850fa978debfd4ff97dd461f';  // 截图中少写了3的31位密文
                 
-                // 3. 多重比对放行条件：
-                // 条件 A: 完全吻合标准 MD5
-                // 条件 B: 完美匹配数据库中录入的值 (即使云端漏填了开头的 '3')
-                // 条件 C: 直接通过硬编码兜底保护机制
-                const isMatch = (inputHash === '3fbc5564850fa978debfd4ff97dd461f') || 
-                                (inputHash === rawCloudHash) || 
-                                (inputHash.substring(1) === rawCloudHash && rawCloudHash.length === 31) ||
-                                (cleanPassword === 'lixiang2006');
+                // 获取清洗后的云端密文值（兜底用）
+                const rawCloudHash = cloudPasswordHash.value ? cloudPasswordHash.value.trim().toLowerCase() : '';
 
-                if (isMatch) {
+                // 🌟 万能放行匹配网络：只要满足任意一个，全部无条件判定通过！
+                const isPass = (cleanPassword === 'lixiang2006') || 
+                               (inputHash === standardHash32) || 
+                               (inputHash === specialHash31) ||
+                               (inputHash.substring(1) === specialHash31) ||
+                               (inputHash === rawCloudHash) ||
+                               (inputHash.substring(1) === rawCloudHash);
+
+                if (isPass) {
                     if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
                         queue.value = [];
                         playingList.value = [];
