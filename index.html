@@ -72,7 +72,7 @@
             
             <div class="text-[10px] text-gray-400 border-t pt-3 border-gray-100 space-y-1">
                 <div>制作人：枕梦</div>
-                <div class="text-orange-500 font-medium">每晚 22:00 数据准时自动重置清空</div>
+                <div class="text-orange-500 font-medium">每晚 22:30 数据准时自动重置清空</div>
                 <div class="text-red-400">23:00 - 次日 09:00 开启全线禁排</div>
             </div>
         </div>
@@ -230,38 +230,26 @@
     </main>
 
     <main v-if="currentTab === 'attendance'">
-        <section class="grid grid-cols-2 gap-4 mb-4">
-            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 rounded-2xl text-white shadow-sm text-center">
-                <div class="text-xs opacity-80">当前已出勤总人数</div>
-                <div class="text-3xl font-extrabold mt-1">{{ queue.length }} <span class="text-xs font-normal">人</span></div>
+        <section class="bg-white rounded-2xl p-6 shadow-sm mb-4 text-center border-t-4 border-emerald-500">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">📢 今日实时出勤总计</h2>
+            <div class="text-5xl font-black text-emerald-600 my-4 flex items-center justify-center gap-2">
+                <span>{{ directAttendancePeople }}</span>
+                <span class="text-lg font-normal text-gray-400">张</span>
             </div>
-            <div class="bg-gradient-to-br from-cyan-500 to-blue-600 p-4 rounded-2xl text-white shadow-sm text-center">
-                <div class="text-xs opacity-80">出勤总卡数</div>
-                <div class="text-3xl font-extrabold mt-1">{{ totalAttendanceCards }} <span class="text-xs font-normal">张</span></div>
-            </div>
-        </section>
-
-        <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">今日出勤报到花名册</h2>
-                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 重置出勤</button>
-            </div>
-            <div class="divide-y divide-gray-100" v-if="queue.length > 0">
-                <div v-for="(person, index) in queue" :key="person.id" class="py-3 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">{{ index + 1 }}</span>
-                        <div>
-                            <span class="font-bold text-gray-800">{{ person.name }}</span>
-                            <span class="text-[10px] text-gray-400 ml-2">于 {{ person.createdAt }} 签到</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md">带卡: {{ person.count }}张</span>
-                        <button v-if="!isNightRestriction" @click="removeCard(person.id)" class="text-red-400 text-xs hover:text-red-600">撤销</button>
-                    </div>
+            
+            <div class="flex items-center justify-center gap-3 max-w-xs mx-auto mt-6" v-if="!isNightRestriction">
+                <button type="button" @click="stepAttendance(-1)" class="w-12 h-12 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-2xl rounded-xl transition-colors active:scale-95 flex items-center justify-center shadow-xs">－</button>
+                <div class="flex-1 relative">
+                    <input type="number" v-model.number="directAttendancePeople" @change="updateAttendanceCount" min="0" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-center text-xl font-bold rounded-xl p-2.5 focus:ring-emerald-500 focus:border-emerald-500">
                 </div>
+                <button type="button" @click="stepAttendance(1)" class="w-12 h-12 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-bold text-2xl rounded-xl transition-colors active:scale-95 flex items-center justify-center shadow-xs">＋</button>
             </div>
-            <div v-else class="text-center py-12 text-gray-400 text-sm">今天还没有小伙伴报到，快去底下签到！</div>
+            <p v-if="!isNightRestriction" class="text-[11px] text-gray-400 mt-3">可以直接填入数字，代表总卡数。支持通过加减号精确增加或减少</p>
+            <div v-else class="text-xs text-red-500 mt-2 font-medium">夜间时段，暂停调整出勤数据。</div>
+            
+            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1">🔒 重置出勤</button>
+            </div>
         </section>
     </main>
 
@@ -273,17 +261,34 @@
             </div>
             <div class="p-4 overflow-y-auto text-xs text-gray-600 space-y-4 leading-relaxed">
                 <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">一、核心规则（必读）</h3>
-                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列和上机状态。</p>
-                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 开启全线禁排。</p>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">一、核心时间规则</h3>
+                    <p class="text-orange-600 font-medium">1. 定时自动重置：为了免去每日手动清理的繁琐操作，系统在每晚 22:30 分之后会自动重置清空所有排卡队列和上机状态。</p>
+                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断锁定：每晚 23:00 至次日 09:00 为非营业禁排时段。此期间系统全面进入只读锁定状态，底部输入框和调整按钮均无法操作。</p>
                 </div>
                 <hr class="border-gray-100">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">二、舞萌 Maimai 排卡逻辑</h3>
-                    <p>1. 所有人都有自由表达和点选【拼机】或【单刷】的权利。</p>
-                    <p>2. 系统计算整个队列耗时，<b>仅依据排在第 1 位的玩家的选择</b>进行全局判定：</p>
-                    <p class="text-blue-600 font-medium">📌 若 1 号选择【拼机】：1号等12分钟，2号等12分钟（一同拼机），3号等24分钟，4号等36分钟……（后面依次递增12分钟）。</p>
-                    <p class="text-purple-600 font-medium">📌 若 1 号选择【单刷】：1号等12分钟，2号等24分钟，3号等36分钟，4号等48...（后面依次递增12分钟）。</p>
+                    <p>1. 正常入队：在底部栏输入昵称并选择带卡数量即可提交入队。若有多人结伴，名字之间可用加号或斜杠隔开进行标注。</p>
+                    <p class="mt-1">2. 智能分发：队列第一组点击上机时，若名字包含加号且左右机位均空闲，系统会自动解析并分发两人同时上机。也可根据实际空位单独指定上左机或上右机。</p>
+                    <p class="mt-1">3. 异常调整：若排卡玩家暂时不在现场，可点击“迟到末尾”将其移至队尾并打上特殊标记；如需紧急处理，可通过“顶上”功能快速调整顺序。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">三、中二节奏 CHUNITHM 逻辑</h3>
+                    <p>1. 机位独立：中二节奏板块提供两台相互独立的单人机位，左右位置可以并行操作，互不干扰。</p>
+                    <p class="mt-1">2. 顺位分发：排在队首的玩家上机时，根据1号机和2号机当前的空闲状态，点击对应按钮即可入座并释放队列，下机时点击相应机位的下机按钮即可。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">四、机厅出勤张数统计</h3>
+                    <p>1. 数据看板：该板块用于宏观统计今日在机厅内活动的总出勤卡数，方便大家直观评估当前机厅的拥挤程度。</p>
+                    <p class="text-emerald-600 font-medium mt-1">2. 便捷控制：现已升级为纯数字直接输入与加减按钮双控交互模式。支持直接填写最新的总数字，或点击两边的加减号进行精准递增或递减，无需按人头重复点击。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">五、服务器资源节约说明</h3>
+                    <p class="font-medium text-gray-700">1. 本地会话缓存：为了防止用户频繁盲目刷新页面而向云端频繁发送垃圾请求、过度占用并消耗宝贵的服务器流量，网页内置了 Session Cache 缓存机制。</p>
+                    <p class="mt-1">2. 按需按动交互：在不关闭网页标签的前提下，数据的计算和比对优先在本地处理。只有在执行实质性的排卡、下机、置顶、调整数量等变动操作时，系统才会精准地触发一次云端数据同步，请放心流畅使用。</p>
                 </div>
             </div>
             <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
@@ -293,17 +298,19 @@
     </div>
 
     <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-40">
-        <form @submit.prevent="submitCard" class="flex gap-2 items-center">
+        <div v-if="currentTab === 'attendance'" class="text-center text-xs py-2 text-gray-500 font-medium">
+            💡 请在上方直接进行总人数的数字加减操作
+        </div>
+        <form v-else @submit.prevent="submitCard" class="flex gap-2 items-center">
             <input type="text" v-model="form.name" :disabled="isNightRestriction" :placeholder="isNightRestriction ? '夜间休息，暂停排卡' : '输入昵称...'" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
             <select v-model="form.count" :disabled="isNightRestriction" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24">
                 <option :value="1">1张卡</option>
                 <option :value="2">2张卡</option>
                 <option :value="3">3张卡</option>
                 <option v-if="currentTab === 'maimai'" :value="4">4人同玩</option>
-                <option v-if="currentTab === 'attendance'" :value="4">4张卡</option>
             </select>
             <button type="submit" :disabled="isNightRestriction" :class="isNightRestriction ? 'bg-gray-300' : tabColorClass" class="text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md">
-                <span>{{ isEditing ? '修改' : (currentTab === 'attendance' ? '报到' : '排卡') }}</span>
+                <span>{{ isEditing ? '修改' : '排卡' }}</span>
             </button>
         </form>
     </footer>
@@ -343,7 +350,6 @@ createApp({
         const isMenuOpen = ref(false); 
         const showTutorialModal = ref(false); 
         const queue = ref([]);
-        // 数据结构初始化规范：始终确保 playingList 存在至少两个槽位 [0] 和 [1]
         const playingList = ref([null, null]);
         const isEditing = ref(false);
         const editingId = ref(null);
@@ -362,6 +368,26 @@ createApp({
             return '奇妙之城出勤卡数统计';
         });
 
+        const directAttendancePeople = computed({
+            get() {
+                if (currentTab.value !== 'attendance') return 0;
+                const found = queue.value.find(item => item.id === 'attendance_total_count');
+                return found ? found.count : 0;
+            },
+            set(val) {
+                if (currentTab.value !== 'attendance') return;
+                let parsed = parseInt(val, 10);
+                if (isNaN(parsed) || parsed < 0) parsed = 0;
+                
+                const foundIndex = queue.value.findIndex(item => item.id === 'attendance_total_count');
+                if (foundIndex !== -1) {
+                    queue.value[foundIndex].count = parsed;
+                } else {
+                    queue.value.push({ id: 'attendance_total_count', name: '总人数记录', count: parsed });
+                }
+            }
+        });
+
         const maimaiQueueWithTime = computed(() => {
             if (currentTab.value !== 'maimai') return queue.value;
             
@@ -372,18 +398,14 @@ createApp({
             
             for (let i = 0; i < result.length; i++) {
                 const current = result[i];
-                
                 if (i === 0) {
                     current.computedWait = 12; 
-                } 
-                else if (i === 1) {
+                } else if (i === 1) {
                     current.computedWait = (firstPlayType === '单刷') ? 24 : 12;
-                } 
-                else {
+                } else {
                     current.computedWait = result[1].computedWait + (i - 1) * 12;
                 }
             }
-            
             return result;
         });
 
@@ -393,7 +415,6 @@ createApp({
             return lastCard.computedWait + 12;
         });
 
-        const totalAttendanceCards = computed(() => queue.value.reduce((sum, item) => sum + item.count, 0));
         const tabColorClass = computed(() => {
             if (currentTab.value === 'maimai') return 'bg-orange-500';
             if (currentTab.value === 'chunithm') return 'bg-indigo-600';
@@ -417,9 +438,12 @@ createApp({
         const checkAndExecuteAutoClear = async (record) => {
             const now = new Date();
             const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
             const todayStr = getTodayDateString();
 
-            if (currentHour >= 22 && record.last_clear_date !== todayStr) {
+            const isAfterTenThirty = (currentHour === 22 && currentMinute >= 30) || currentHour >= 23;
+
+            if (isAfterTenThirty && record.last_clear_date !== todayStr) {
                 queue.value = [];
                 playingList.value = [null, null];
                 lastClearDate.value = todayStr;
@@ -452,9 +476,7 @@ createApp({
                 const data = await supabaseFetch('GET', currentTab.value);
                 if (data && data.length > 0) {
                     const record = data[0];
-                    if (record.admin_password) {
-                        cloudPasswordHash.value = record.admin_password;
-                    }
+                    if (record.admin_password) cloudPasswordHash.value = record.admin_password;
                     const cleared = await checkAndExecuteAutoClear(record);
                     if (!cleared) {
                         queue.value = record.queue || [];
@@ -494,6 +516,19 @@ createApp({
             loadFromCacheOrCloud();
         };
 
+        const updateAttendanceCount = async () => {
+            await pushDataToCloud();
+        };
+
+        const stepAttendance = async (step) => {
+            if (isNightRestriction.value) return;
+            let currentCount = directAttendancePeople.value;
+            currentCount += step;
+            if (currentCount < 0) currentCount = 0;
+            directAttendancePeople.value = currentCount;
+            await pushDataToCloud();
+        };
+
         const clearAllDataWithPassword = async () => {
             const password = prompt("请输入管理员密码以清空该版块数据:");
             if (password !== null) {
@@ -502,14 +537,14 @@ createApp({
                 const dbHash = cloudPasswordHash.value ? cloudPasswordHash.value.trim().toLowerCase() : '';
 
                 if (inputHash === dbHash || cleanPassword === 'lixiang2006') {
-                    if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
+                    if (confirm("警告：确认彻底清空或重置当前版块的数据吗？")) {
                         queue.value = [];
                         playingList.value = [null, null];
                         await pushDataToCloud();
-                        alert("清空成功！");
+                        alert("数据已被清空/重置成功！");
                     }
                 } else {
-                    alert("密码错误，拒绝清空！");
+                    alert("密码错误，拒绝操作！");
                 }
             }
         };
@@ -517,10 +552,7 @@ createApp({
         const togglePlayType = async (id, type) => {
             if (isNightRestriction.value) return;
             const card = queue.value.find(c => c.id === id);
-            if (card) {
-                card.playType = type;
-                await pushDataToCloud();
-            }
+            if (card) { card.playType = type; await pushDataToCloud(); }
         };
 
         const submitCard = async () => {
@@ -530,8 +562,7 @@ createApp({
             if (isEditing.value) {
                 const card = queue.value.find(c => c.id === editingId.value);
                 if (card) { card.name = inputName; card.count = form.value.count; }
-                isEditing.value = false;
-                editingId.value = null;
+                isEditing.value = false; editingId.value = null;
             } else {
                 queue.value.push({ id: Date.now().toString(), name: inputName, count: form.value.count, createdAt: getNowTime(), isMovedToBottom: false, playType: '拼机' });
             }
@@ -539,7 +570,6 @@ createApp({
             await pushDataToCloud(); 
         };
 
-        // 🌟 针对 Maimai：传入指定的机位索引 slotIndex (0代表左，1代表右)
         const startPlayMaimai = async (id, slotIndex) => {
             if (isNightRestriction.value) return;
             const index = queue.value.findIndex(c => c.id === id);
@@ -547,20 +577,16 @@ createApp({
                 const card = queue.value.splice(index, 1)[0];
                 const nowTime = getNowTime();
                 const names = card.name.split(/[+\/／＋]/);
-                
-                // 如果是多人组合名，且当前两边都空着，就自动分两边
                 if (names.length >= 2 && !playingList.value[0] && !playingList.value[1]) {
                     playingList.value[0] = { name: names[0].trim(), count: Math.ceil(card.count/2), time: nowTime };
                     playingList.value[1] = { name: names[1].trim(), count: Math.floor(card.count/2) || 1, time: nowTime };
                 } else {
-                    // 否则精准塞入指定的左/右机位
                     playingList.value[slotIndex] = { name: card.name, count: card.count, time: nowTime };
                 }
                 await pushDataToCloud();
             }
         };
 
-        // 🌟 针对中二：传入指定的机位索引 slotIndex (0代表1号机，1代表2号机)
         const startPlayChunithm = async (id, slotIndex) => {
             if (isNightRestriction.value) return;
             const index = queue.value.findIndex(c => c.id === id);
@@ -572,33 +598,9 @@ createApp({
             }
         };
 
-        const finishChunithmMachine = async (machineIndex) => {
-            if (isNightRestriction.value) return;
-            playingList.value[machineIndex] = null;
-            await pushDataToCloud();
-        };
-
-        const moveToTop = async (id) => {
-            if (isNightRestriction.value) return;
-            const index = queue.value.findIndex(c => c.id === id);
-            if (index > 0) {
-                const targetCard = queue.value.splice(index, 1)[0];
-                queue.value.unshift(targetCard);
-                await pushDataToCloud();
-            }
-        };
-
-        const moveToBottom = async (id) => {
-            if (isNightRestriction.value) return;
-            const index = queue.value.findIndex(c => c.id === id);
-            if (index !== -1 && index !== queue.value.length - 1) {
-                const targetCard = queue.value.splice(index, 1)[0];
-                targetCard.isMovedToBottom = true;
-                queue.value.push(targetCard);
-                await pushDataToCloud();
-            }
-        };
-
+        const finishChunithmMachine = async (machineIndex) => { if (isNightRestriction.value) return; playingList.value[machineIndex] = null; await pushDataToCloud(); };
+        const moveToTop = async (id) => { if (isNightRestriction.value) return; const index = queue.value.findIndex(c => c.id === id); if (index > 0) { const targetCard = queue.value.splice(index, 1)[0]; queue.value.unshift(targetCard); await pushDataToCloud(); } };
+        const moveToBottom = async (id) => { if (isNightRestriction.value) return; const index = queue.value.findIndex(c => c.id === id); if (index !== -1 && index !== queue.value.length - 1) { const targetCard = queue.value.splice(index, 1)[0]; targetCard.isMovedToBottom = true; queue.value.push(targetCard); await pushDataToCloud(); } };
         const finishPlaySingle = async (index) => { if (isNightRestriction.value) return; playingList.value[index] = null; await pushDataToCloud(); };
         const finishPlayAll = async () => { if (isNightRestriction.value) return; playingList.value = [null, null]; await pushDataToCloud(); };
         const removeCard = async (id) => { if (isNightRestriction.value) return; if(confirm("确定要移除吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
@@ -614,7 +616,7 @@ createApp({
             }, 5000);
         });
 
-        return { currentTab, isMenuOpen, showTutorialModal, currentTabTitle, queue, playingList, form, isEditing, totalAttendanceCards, tabColorClass, isNightRestriction, toggleMenu, openTutorial, closeTutorial, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, moveToTop, moveToBottom, clearAllDataWithPassword, togglePlayType, totalMaimaiWaitTime, maimaiQueueWithTime };
+        return { currentTab, isMenuOpen, showTutorialModal, currentTabTitle, queue, playingList, form, isEditing, tabColorClass, isNightRestriction, directAttendancePeople, toggleMenu, openTutorial, closeTutorial, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, moveToTop, moveToBottom, clearAllDataWithPassword, togglePlayType, totalMaimaiWaitTime, maimaiQueueWithTime, stepAttendance, updateAttendanceCount };
     }
 }).mount('#app');
 </script>
