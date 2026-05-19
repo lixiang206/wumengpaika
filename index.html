@@ -112,17 +112,21 @@
         <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Maimai 队列 ({{ queue.length }} 组)</h2>
-                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">预计: {{ totalWaitTime }} 分钟</span>
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">总计等待: {{ totalMaimaiWaitTime }} 分钟</span>
             </div>
             <div class="divide-y divide-gray-100" v-if="queue.length > 0">
-                <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex flex-col gap-2">
+                <div v-for="(card, index) in maimaiQueueWithTime" :key="card.id" class="py-3 flex flex-col gap-2">
                     <div class="flex justify-between items-center">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold mt-1" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
-                            <div>
-                                <div class="font-bold text-gray-800 text-base flex items-center gap-1">
-                                    {{ card.name }}
-                                    <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">迟到过</span>
+                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold mt-1 shrink-0" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-gray-800 text-base flex items-center gap-2 flex-wrap">
+                                    <span class="truncate max-w-[140px]">{{ card.name }}</span>
+                                    <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded shrink-0">迟到过</span>
+                                    
+                                    <span :class="card.computedWait === 0 ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-amber-50 text-amber-600 border border-amber-200'" class="text-[11px] px-2 py-0.5 rounded-md font-bold shrink-0">
+                                        预计等: {{ card.computedWait }} 分钟
+                                    </span>
                                 </div>
                                 
                                 <div class="flex items-center gap-1.5 my-1">
@@ -138,7 +142,7 @@
                                 <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
                             </div>
                         </div>
-                        <div class="flex gap-1.5 items-center" v-if="!isNightRestriction">
+                        <div class="flex gap-1.5 items-center shrink-0" v-if="!isNightRestriction">
                             <button v-if="index === 0 && playingList.length < 2" @click="startPlayMaimai(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
                             <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
                             <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm">❌</button>
@@ -365,7 +369,71 @@ createApp({
             return '奇妙之城出勤卡数统计';
         });
 
-        const totalWaitTime = computed(() => queue.value.reduce((sum, item) => sum + (item.count * 12), 0));
+        // 🌟 新增：计算 Maimai 整个队列所需的总时间（基于最新的拼机算法）
+        const totalMaimaiWaitTime = computed(() => {
+            if (currentTab.value !== 'maimai') return 0;
+            let total = 0;
+            for (let i = 0; i < queue.value.length; i++) {
+                const current = queue.value[i];
+                // 如果是第一或第二组，且当前有人在上机，认为不需要完整等待12分钟，这里根据要求计算排队中的消耗
+                if ((current.playType || '拼机') === '单刷') {
+                    total += 12;
+                } else {
+                    // 如果选择拼机，并且后面还有人，则他不单独增加全局时间成本
+                    if (i + 1 < queue.value.length) {
+                        // 拼机不花额外时间，等同于与后一个人共享
+                    } else {
+                        total += 12; // 队尾拼机无后续人，默认占12分钟
+                    }
+                }
+            }
+            return total;
+        });
+
+        // 🌟 新增：动态精密计算 Maimai 每组排卡的预计等待时间
+        const maimaiQueueWithTime = computed(() => {
+            if (currentTab.value !== 'maimai') return queue.value;
+            
+            // 浅拷贝队列数据以便计算
+            const result = queue.value.map(item => ({ ...item }));
+            
+            // 倒序累加法：从最后一个人开始往前推，能完美解决“拼机的人与后一个人等待时间相同”的需求
+            let accumulatedTime = 0;
+            
+            for (let i = result.length - 1; i >= 0; i--) {
+                const current = result[i];
+                
+                // 【特殊要求判定】：如果是第一个（index=0）或第二个（index=1），根据机位空闲度智能评估
+                if (i === 0) {
+                    current.computedWait = 0; // 第一个准备上机，预计等待0分钟
+                    continue;
+                }
+                if (i === 1) {
+                    // 第二个如果位置空闲可以马上上，否则最多等当前结束（此处直接按业务设定为0-12分钟的缓冲区，默认给0或固定极短值，这里给0代表随时递补）
+                    current.computedWait = (playingList.value.length < 2) ? 0 : 12;
+                    continue;
+                }
+
+                // 对于第三个及以后的人：
+                if ((current.playType || '拼机') === '拼机') {
+                    // 如果自己是拼机：他的预计时间和后一个人完全一样
+                    if (i + 1 < result.length) {
+                        current.computedWait = result[i + 1].computedWait;
+                    } else {
+                        // 如果自己是拼机但是已经是最后一个人了，后面没人，则基础增加12
+                        accumulatedTime += 12;
+                        current.computedWait = accumulatedTime;
+                    }
+                } else {
+                    // 如果自己是单刷：后面累计的时间加上自己所消耗的 12 分钟
+                    accumulatedTime += 12;
+                    current.computedWait = accumulatedTime;
+                }
+            }
+            
+            return result;
+        });
+
         const totalAttendanceCards = computed(() => queue.value.reduce((sum, item) => sum + item.count, 0));
         const tabColorClass = computed(() => {
             if (currentTab.value === 'maimai') return 'bg-orange-500';
@@ -467,7 +535,6 @@ createApp({
             loadFromCacheOrCloud();
         };
 
-        // 🔒 标准密码鉴权核心
         const clearAllDataWithPassword = async () => {
             const password = prompt("请输入管理员密码以清空该版块数据:");
             if (password !== null) {
@@ -488,13 +555,12 @@ createApp({
             }
         };
 
-        // 🌟 新增：切换拼机/单刷状态函数
         const togglePlayType = async (id, type) => {
             if (isNightRestriction.value) return;
             const card = queue.value.find(c => c.id === id);
             if (card) {
                 card.playType = type;
-                await pushDataToCloud(); // 实时保存数据到 Supabase
+                await pushDataToCloud();
             }
         };
 
@@ -508,7 +574,6 @@ createApp({
                 isEditing.value = false;
                 editingId.value = null;
             } else {
-                // 🌟 新加进去的卡组默认设为 '拼机' 状态
                 queue.value.push({ id: Date.now().toString(), name: inputName, count: form.value.count, createdAt: getNowTime(), isMovedToBottom: false, playType: '拼机' });
             }
             form.value.name = ''; form.value.count = 1;
@@ -605,7 +670,7 @@ createApp({
             }, 5000);
         });
 
-        return { currentTab, isMenuOpen, showTutorialModal, currentTabTitle, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, isNightRestriction, toggleMenu, openTutorial, closeTutorial, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword, togglePlayType };
+        return { currentTab, isMenuOpen, showTutorialModal, currentTabTitle, queue, playingList, form, isEditing, totalAttendanceCards, tabColorClass, isNightRestriction, toggleMenu, openTutorial, closeTutorial, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword, togglePlayType, totalMaimaiWaitTime, maimaiQueueWithTime };
     }
 }).mount('#app');
 </script>
