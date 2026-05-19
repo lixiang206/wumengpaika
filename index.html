@@ -26,10 +26,13 @@
         </h1>
     </header>
 
-    <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
-        <img src="zhuye.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    <div v-if="currentTab !== 'attendance'" class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
+        <img :src="currentTab === 'maimai' ? 'zhuye.jpg' : 'chunithm.jpg'" 
+             :alt="currentTabTitle" 
+             class="w-full h-full object-cover object-center" 
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
-            <span>🖼️ 制作人：枕梦 | 图片放于 img/banner.jpg</span>
+            <span>🖼️ 制作人：枕梦 | 请在对应位置放置图片</span>
         </div>
     </div>
 
@@ -352,30 +355,24 @@ createApp({
             return '奇妙之城出勤卡数统计';
         });
 
-        // 🌟 只根据第一个人的游玩类型计算时间的算法模型
         const maimaiQueueWithTime = computed(() => {
             if (currentTab.value !== 'maimai') return queue.value;
             
-            // 浅拷贝原始队列数据
             const result = queue.value.map(item => ({ ...item }));
             if (result.length === 0) return result;
             
-            // 获取第一个人的真实选择类型（默认拼机）
             const firstPlayType = result[0].playType || '拼机';
             
-            // 正向逐一计算每个位置的预计等待时间
             for (let i = 0; i < result.length; i++) {
                 const current = result[i];
                 
                 if (i === 0) {
-                    current.computedWait = 12; // 1号固定12分钟
+                    current.computedWait = 12; 
                 } 
                 else if (i === 1) {
-                    // 2号纯粹只看1号：1号单刷就是24分钟，1号拼机就是12分钟
                     current.computedWait = (firstPlayType === '单刷') ? 24 : 12;
                 } 
                 else {
-                    // 从3号开始，无论3号或者2号自己选了什么，时间都是在2号的基础上，后续每多1人往后增加 12 分钟
                     current.computedWait = result[1].computedWait + (i - 1) * 12;
                 }
             }
@@ -383,7 +380,6 @@ createApp({
             return result;
         });
 
-        // 获取整个 Maimai 队伍最后的总等待时间
         const totalMaimaiWaitTime = computed(() => {
             if (maimaiQueueWithTime.value.length === 0) return 0;
             const lastCard = maimaiQueueWithTime.value[maimaiQueueWithTime.value.length - 1];
