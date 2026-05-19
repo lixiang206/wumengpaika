@@ -124,7 +124,7 @@
                                     <span class="truncate max-w-[140px]">{{ card.name }}</span>
                                     <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded shrink-0">迟到过</span>
                                     
-                                    <span :class="card.computedWait === 0 ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-amber-50 text-amber-600 border border-amber-200'" class="text-[11px] px-2 py-0.5 rounded-md font-bold shrink-0">
+                                    <span :class="card.computedWait === 12 ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-amber-50 text-amber-600 border border-amber-200'" class="text-[11px] px-2 py-0.5 rounded-md font-bold shrink-0">
                                         预计等: {{ card.computedWait }} 分钟
                                     </span>
                                 </div>
@@ -265,33 +265,15 @@
             <div class="p-4 overflow-y-auto text-xs text-gray-600 space-y-4 leading-relaxed">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">一、核心规则（必读）</h3>
-                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列和上机状态，无需人工每天手动还原。</p>
-                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 为机厅休息禁排时段。此期间底部输入栏将被强行锁定，无法进行任何排卡和修改操作。</p>
+                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列和上机状态。</p>
+                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 开启全线禁排。</p>
                 </div>
                 <hr class="border-gray-100">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">二、舞萌 Maimai 排卡逻辑</h3>
-                    <p>1. 底部输入昵称、选择卡数后点“排卡”即可入队。如果是多人结伴同玩，请用 <b class="text-gray-800 font-bold">+</b> 或 <b class="text-gray-800 font-bold">/</b> 符号隔开（例如：<span class="bg-gray-100 px-1 py-0.5 rounded">张三+李四</span>）。</p>
-                    <p class="mt-1">2. 队列第一组点击“上机”时，若名字带有加号且当前1P和2P都空闲，系统会<b>智能识别并自动把两人同时分发</b>上机！如果位置不够，可以点击右侧的“邀请上机”加人。</p>
-                    <p class="mt-1">3. 如果排卡的人暂时不在，可以点击<b>“迟到末尾”</b>，该卡组会移到队尾并自动标记“迟到过”。若需要紧急插队调整，可以点击<b>“顶上”</b>一键置顶。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">三、中二节奏 CHUNITHM 逻辑</h3>
-                    <p>1. 中二节奏两台机器互不干扰，支持两个<b>独立的单人机位</b>进行并行动作。</p>
-                    <p class="mt-1">2. 队首玩家点击“上机”后，系统会精密侦测 1 号机和 2 号机哪个空闲，并按照最优解自动将你塞入空座位。点击各自机位的“下机”即可释放位置。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">四、出勤张数统计逻辑</h3>
-                    <p>1. 该板块专门统计今日在奇妙之城机厅的总卡数和总出勤人数。</p>
-                    <p class="mt-1">2. 输入你的昵称和带卡数量，点击“报到”。上方的大屏看板会<b>自动累加并高亮渲染</b>当前机厅的总带卡基数，方便大家评估机厅拥挤度。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">五、资源节约技术说明</h3>
-                    <p>1. 网页引入了高级浏览器浏览器会话级缓存（Session Cache）。只要你不关闭这个排卡网页标签页，<b>所有数据均在本地比对，绝不白白刷新消耗服务器流量</b>。</p>
-                    <p class="mt-1">2. 只有当你有实质的排卡、下机、置顶变动时，才会产生网络交互，请放心流畅使用！</p>
+                    <p>1. 名字右侧显示高亮计算的**预计等待时间**。</p>
+                    <p>2. 排在第1位的人固定预计等12分钟。如果第1人切换选择<b>“拼机”</b>，第2人的等待时间将与第1人共享，同样是12分钟；若第1人切换选择<b>“单刷”</b>，第2人则在其基础上叠加12分钟（变为24分钟）。</p>
+                    <p>3. 从第3人开始，时间完全根据前面所有人的设置进行正向累积计算。</p>
                 </div>
             </div>
             <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
@@ -369,69 +351,45 @@ createApp({
             return '奇妙之城出勤卡数统计';
         });
 
-        // 🌟 新增：计算 Maimai 整个队列所需的总时间（基于最新的拼机算法）
-        const totalMaimaiWaitTime = computed(() => {
-            if (currentTab.value !== 'maimai') return 0;
-            let total = 0;
-            for (let i = 0; i < queue.value.length; i++) {
-                const current = queue.value[i];
-                // 如果是第一或第二组，且当前有人在上机，认为不需要完整等待12分钟，这里根据要求计算排队中的消耗
-                if ((current.playType || '拼机') === '单刷') {
-                    total += 12;
-                } else {
-                    // 如果选择拼机，并且后面还有人，则他不单独增加全局时间成本
-                    if (i + 1 < queue.value.length) {
-                        // 拼机不花额外时间，等同于与后一个人共享
-                    } else {
-                        total += 12; // 队尾拼机无后续人，默认占12分钟
-                    }
-                }
-            }
-            return total;
-        });
-
-        // 🌟 新增：动态精密计算 Maimai 每组排卡的预计等待时间
+        // 🌟 动态精密计算 Maimai 每组排卡的预计等待时间（正向递推逻辑）
         const maimaiQueueWithTime = computed(() => {
             if (currentTab.value !== 'maimai') return queue.value;
             
-            // 浅拷贝队列数据以便计算
+            // 浅拷贝原始队列数据
             const result = queue.value.map(item => ({ ...item }));
             
-            // 倒序累加法：从最后一个人开始往前推，能完美解决“拼机的人与后一个人等待时间相同”的需求
-            let accumulatedTime = 0;
-            
-            for (let i = result.length - 1; i >= 0; i--) {
+            // 正向遍历逻辑计算时间
+            for (let i = 0; i < result.length; i++) {
                 const current = result[i];
                 
-                // 【特殊要求判定】：如果是第一个（index=0）或第二个（index=1），根据机位空闲度智能评估
                 if (i === 0) {
-                    current.computedWait = 0; // 第一个准备上机，预计等待0分钟
-                    continue;
-                }
-                if (i === 1) {
-                    // 第二个如果位置空闲可以马上上，否则最多等当前结束（此处直接按业务设定为0-12分钟的缓冲区，默认给0或固定极短值，这里给0代表随时递补）
-                    current.computedWait = (playingList.value.length < 2) ? 0 : 12;
-                    continue;
-                }
-
-                // 对于第三个及以后的人：
-                if ((current.playType || '拼机') === '拼机') {
-                    // 如果自己是拼机：他的预计时间和后一个人完全一样
-                    if (i + 1 < result.length) {
-                        current.computedWait = result[i + 1].computedWait;
-                    } else {
-                        // 如果自己是拼机但是已经是最后一个人了，后面没人，则基础增加12
-                        accumulatedTime += 12;
-                        current.computedWait = accumulatedTime;
-                    }
+                    // 规则 1：排队的第一个人固定预计等 12 分钟
+                    current.computedWait = 12;
                 } else {
-                    // 如果自己是单刷：后面累计的时间加上自己所消耗的 12 分钟
-                    accumulatedTime += 12;
-                    current.computedWait = accumulatedTime;
+                    // 规则 2：从第二个人开始，时间完全根据前一个人的选择来决定
+                    const prev = result[i - 1];
+                    const prevPlayType = prev.playType || '拼机'; // 默认状态为拼机
+                    
+                    if (prevPlayType === '拼机') {
+                        // 如果前一个人是拼机，当前这个人和前一个人等待时间一样
+                        current.computedWait = prev.computedWait;
+                    } else {
+                        // 如果前一个人是单刷，当前这个人时间在上一个人基础上累加 12 分钟
+                        current.computedWait = prev.computedWait + 12;
+                    }
                 }
             }
             
             return result;
+        });
+
+        // 获取整个 Maimai 队伍最后的总等待时间
+        const totalMaimaiWaitTime = computed(() => {
+            if (maimaiQueueWithTime.value.length === 0) return 0;
+            // 队列中最后一个人的计算预估时间加上他本身的占用即为全队总时间成本
+            const lastCard = maimaiQueueWithTime.value[maimaiQueueWithTime.value.length - 1];
+            const lastPlayType = lastCard.playType || '拼机';
+            return lastPlayType === '单刷' ? lastCard.computedWait + 12 : lastCard.computedWait;
         });
 
         const totalAttendanceCards = computed(() => queue.value.reduce((sum, item) => sum + item.count, 0));
