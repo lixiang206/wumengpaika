@@ -27,7 +27,7 @@
     </header>
 
     <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
-        <img src="zhuye.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <img src="img/banner.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
             <span>🖼️ 制作人：枕梦 | 图片放于 img/banner.jpg</span>
         </div>
@@ -47,7 +47,7 @@
         <div :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out p-5 flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
-                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择游玩的游戏</span>
+                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择机种版块</span>
                     <button @click="toggleMenu" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
                 </div>
                 
@@ -56,7 +56,7 @@
                         <span class="w-2 h-2 rounded-full bg-orange-500"></span> 舞萌 Maimai 排卡
                     </button>
                     <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> 中二 CHUNITHM 排卡
+                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> CHUNITHM 中二排卡
                     </button>
                     <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤卡数统计
@@ -337,7 +337,7 @@ createApp({
         const lastClearDate = ref(''); 
         const form = ref({ name: '', count: 1 });
         
-        // 🔒 新增：本地临时存放从云端拉取到的密码密文特征
+        // 🔒 本地临时存放从云端拉取到的密码密文特征
         const cloudPasswordHash = ref('');
 
         const isNightRestriction = computed(() => {
@@ -394,8 +394,7 @@ createApp({
 
             if (cachedData) {
                 const record = JSON.parse(cachedData);
-                // 同步缓存中的密码哈希
-                if(record.admin_password) cloudPasswordHash.value = record.admin_password;
+                if (record.admin_password) cloudPasswordHash.value = record.admin_password;
                 const cleared = await checkAndExecuteAutoClear(record);
                 if (!cleared) {
                     queue.value = record.queue || [];
@@ -413,8 +412,8 @@ createApp({
                 if (data && data.length > 0) {
                     const record = data[0];
                     
-                    // 🔒 核心改动：动态接收从云端下发的密码密文，本地代码完全剥离明文
-                    if(record.admin_password) {
+                    // 🔒 动态接收从云端下发的密码密文
+                    if (record.admin_password) {
                         cloudPasswordHash.value = record.admin_password;
                     }
                     
@@ -457,17 +456,22 @@ createApp({
             loadFromCacheOrCloud();
         };
 
-        // 🔒 核心改动：改造成纯暗箱密文校验逻辑，杜绝密码外泄
+        // 🔒 核心改动：具有极高容错性的纯密文暗箱比对逻辑
         const clearAllDataWithPassword = async () => {
             const password = prompt("请输入管理员密码以清空该版块数据:");
             if (password !== null) {
-                // 1. 将输入的明文转为 MD5 密文
-                const inputHash = md5(password);
+                // 【防错净化】自动去除用户输入密码前后的空格
+                const cleanPassword = password.trim(); 
                 
-                // 2. 如果云端没有配置该密码，提供一个应急默认值（即 lixiang2006 的值）
-                const targetHash = cloudPasswordHash.value || '3fbc5564850fa978debfd4ff97dd461f';
+                // 1. 将净化后的明文转为 MD5 密文
+                const inputHash = md5(cleanPassword);
+                
+                // 2. 读取云端密文，如果获取不到则使用兜底值
+                // 【防错净化】云端密文也自动去空格并转小写，彻底杜绝匹配失败
+                const rawCloudHash = cloudPasswordHash.value || '3fbc5564850fa978debfd4ff97dd461f';
+                const targetHash = rawCloudHash.trim().toLowerCase();
 
-                // 3. 全程比对两端密文特征，前端和网络传输不暴漏任何明文
+                // 3. 全程比对两端密文特征
                 if (inputHash === targetHash) {
                     if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
                         queue.value = [];
