@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>舞萌 Maimai 实时排卡</title>
+    <title>奇妙之城实时排卡助手</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -13,100 +13,208 @@
 <body class="bg-gray-100 font-sans">
 
 <div id="app" v-cloak class="max-w-md mx-auto p-4 pb-28">
-    <header class="text-center my-4">
-        <h1 class="text-2xl font-bold text-gray-800 flex justify-center items-center gap-2">
-            <span class="w-4 h-4 rounded-full bg-cyan-400 inline-block"></span>
-            Maimai 排卡-奇妙之城
-            <span class="w-4 h-4 rounded-full bg-orange-400 inline-block"></span>
+    <header class="text-center my-2">
+        <h1 class="text-2xl font-bold text-gray-800 flex justify-center items-center gap-1.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-cyan-400 inline-block animate-pulse"></span>
+            奇妙之城排卡助手
+            <span class="w-3.5 h-3.5 rounded-full bg-orange-400 inline-block animate-pulse"></span>
         </h1>
-        <p class="text-xs text-gray-500 mt-1">
-            制作人：枕梦 驱动 · 状态: 
+        <p class="text-xs text-gray-500 mt-0.5">
+            制作人：枕梦 · 状态: 
             <span :class="syncStatus === '已同步' ? 'text-green-500' : 'text-red-500 font-bold'">{{ syncStatus }}</span>
-            <br><span class="text-[10px] text-gray-400">（每日22:00自动清空当日数据）</span>
         </p>
     </header>
 
-    <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-cyan-400">
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">正在游玩 / 霸机中</h2>
-            <div class="flex items-center gap-3">
-                <button v-if="playingList.length > 0" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
-                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">
-                    🔒 清空整个板子
-                </button>
-            </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-blue-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-blue-100">
-                <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-blue-300 tracking-wider">1P 左机位</div>
-                <div v-if="playingList[0]" class="mt-3">
-                    <div class="font-bold text-blue-900 text-base truncate">{{ playingList[0].name }}</div>
-                    <div class="text-[10px] text-blue-500 mt-0.5">{{ playingList[0].count }}张 · {{ playingList[0].time }}上</div>
-                </div>
-                <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
-                <button v-if="playingList[0]" @click="finishPlaySingle(0)" class="absolute right-2 top-2 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-blue-600">下机</button>
-            </div>
-            <div class="bg-orange-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-orange-100">
-                <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-orange-300 tracking-wider">2P 右机位</div>
-                <div v-if="playingList[1]" class="mt-3">
-                    <div class="font-bold text-orange-900 text-base truncate">{{ playingList[1].name }}</div>
-                    <div class="text-[10px] text-orange-500 mt-0.5">{{ playingList[1].count }}张 · {{ playingList[1].time }}上</div>
-                </div>
-                <div v-else-if="playingList.length === 1" class="text-center my-auto py-1">
-                    <button @click="inviteToPlay" class="text-[11px] bg-orange-400 text-white px-2 py-1 rounded-lg shadow-sm font-medium hover:bg-orange-500">➕ 邀请上机</button>
-                </div>
-                <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
-                <button v-if="playingList[1]" @click="finishPlaySingle(1)" class="absolute right-2 top-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600">下机</button>
-            </div>
-        </div>
-    </section>
+    <nav class="flex bg-white p-1 rounded-xl shadow-sm my-3 border border-gray-200">
+        <button @click="switchTab('maimai')" :class="currentTab === 'maimai' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-gray-600'" class="flex-1 text-center py-2 text-xs rounded-lg transition-all">
+            舞萌 Maimai
+        </button>
+        <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'text-gray-600'" class="flex-1 text-center py-2 text-xs rounded-lg transition-all">
+            CHUNITHM 中二
+        </button>
+        <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-gray-600'" class="flex-1 text-center py-2 text-xs rounded-lg transition-all">
+            奇妙之城出勤统计
+        </button>
+    </nav>
 
-    <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">排队队列 ({{ queue.length }} 组)</h2>
-            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">预计等待: {{ totalWaitTime }} 分钟</span>
-        </div>
-        <div class="divide-y divide-gray-100" v-if="queue.length > 0">
-            <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex flex-col gap-2">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
-                        <div>
-                            <div class="font-bold text-gray-800 text-base flex items-center gap-1">
-                                {{ card.name }}
-                                <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">迟到过</span>
+    <main v-if="currentTab === 'maimai'">
+        <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-cyan-400">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Maimai 正在游玩</h2>
+                <div class="flex items-center gap-3">
+                    <button v-if="playingList.length > 0" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
+                    <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空板子</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-blue-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-blue-100">
+                    <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-blue-300 tracking-wider">1P 左机位</div>
+                    <div v-if="playingList[0]" class="mt-3">
+                        <div class="font-bold text-blue-900 text-base truncate">{{ playingList[0].name }}</div>
+                        <div class="text-[10px] text-blue-500 mt-0.5">{{ playingList[0].count }}张 · {{ playingList[0].time }}上</div>
+                    </div>
+                    <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
+                    <button v-if="playingList[0]" @click="finishPlaySingle(0)" class="absolute right-2 top-2 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-blue-600">下机</button>
+                </div>
+                <div class="bg-orange-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-orange-100">
+                    <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-orange-300 tracking-wider">2P 右机位</div>
+                    <div v-if="playingList[1]" class="mt-3">
+                        <div class="font-bold text-orange-900 text-base truncate">{{ playingList[1].name }}</div>
+                        <div class="text-[10px] text-orange-500 mt-0.5">{{ playingList[1].count }}张 · {{ playingList[1].time }}上</div>
+                    </div>
+                    <div v-else-if="playingList.length === 1" class="text-center my-auto py-1">
+                        <button @click="inviteToPlay" class="text-[11px] bg-orange-400 text-white px-2 py-1 rounded-lg shadow-sm font-medium hover:bg-orange-500">➕ 邀请上机</button>
+                    </div>
+                    <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
+                    <button v-if="playingList[1]" @click="finishPlaySingle(1)" class="absolute right-2 top-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600">下机</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Maimai 队列 ({{ queue.length }} 组)</h2>
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">预计: {{ totalWaitTime }} 分钟</span>
+            </div>
+            <div class="divide-y divide-gray-100" v-if="queue.length > 0">
+                <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
+                            <div>
+                                <div class="font-bold text-gray-800 text-base flex items-center gap-1">
+                                    {{ card.name }}
+                                    <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">迟到过</span>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
                             </div>
-                            <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
+                        </div>
+                        <div class="flex gap-1.5 items-center">
+                            <button v-if="index === 0 && playingList.length < 2" @click="startPlayMaimai(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
+                            <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
+                            <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm">❌</button>
                         </div>
                     </div>
-                    <div class="flex gap-1.5 items-center">
-                        <button v-if="index === 0 && playingList.length < 2" @click="startPlay(card.id)" class="bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
-                        <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm" title="编辑">✏️</button>
-                        <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm" title="删除">❌</button>
+                    <div class="flex justify-end gap-2 text-[11px] pt-1">
+                        <button v-if="index > 0" @click="moveToTop(card.id)" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">🌟 顶上</button>
+                        <button v-if="index !== queue.length - 1" @click="moveToBottom(card.id)" class="text-orange-500 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded font-medium">⏳ 迟到末尾</button>
                     </div>
                 </div>
-                
-                <div class="flex justify-end gap-2 text-[11px] pt-1">
-                    <button v-if="index > 0" @click="moveToTop(card.id)" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">🌟 顶上</button>
-                    <button v-if="index !== queue.length - 1" @click="moveToBottom(card.id)" class="text-orange-500 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded font-medium">⏳ 迟到末尾</button>
+            </div>
+            <div v-else class="text-center py-8 text-gray-400 text-sm">暂无排卡，快来成为第一个！</div>
+        </section>
+    </main>
+
+    <main v-if="currentTab === 'chunithm'">
+        <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-indigo-500">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">CHUNITHM 正在游玩</h2>
+                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空板子</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-indigo-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-indigo-100">
+                    <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-indigo-400 tracking-wider">1号机 (单人)</div>
+                    <div v-if="playingList[0]" class="mt-3">
+                        <div class="font-bold text-indigo-900 text-base truncate">{{ playingList[0].name }}</div>
+                        <div class="text-[10px] text-indigo-500 mt-0.5">{{ playingList[0].count }}张 · {{ playingList[0].time }}上</div>
+                    </div>
+                    <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
+                    <button v-if="playingList[0]" @click="finishChunithmMachine(0)" class="absolute right-2 top-2 bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-indigo-700">下机</button>
+                </div>
+                <div class="bg-purple-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-purple-100">
+                    <div class="absolute top-1 left-2 text-[10px] uppercase font-bold text-purple-400 tracking-wider">2号机 (单人)</div>
+                    <div v-if="playingList[1]" class="mt-3">
+                        <div class="font-bold text-purple-900 text-base truncate">{{ playingList[1].name }}</div>
+                        <div class="text-[10px] text-purple-500 mt-0.5">{{ playingList[1].count }}张 · {{ playingList[1].time }}上</div>
+                    </div>
+                    <div v-else class="text-center my-auto text-gray-400 text-xs py-2">位置空闲</div>
+                    <button v-if="playingList[1]" @click="finishChunithmMachine(1)" class="absolute right-2 top-2 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm hover:bg-purple-700">下机</button>
                 </div>
             </div>
-        </div>
-        <div v-else class="text-center py-8 text-gray-400 text-sm">暂无排卡，快来成为第一个！</div>
-    </section>
+        </section>
+
+        <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">CHUNITHM 队列 ({{ queue.length }} 人)</h2>
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">预计: {{ queue.length * 10 }} 分钟</span>
+            </div>
+            <div class="divide-y divide-gray-100" v-if="queue.length > 0">
+                <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" :class="index === 0 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
+                            <div>
+                                <div class="font-bold text-gray-800 text-base flex items-center gap-1">
+                                    {{ card.name }}
+                                    <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">迟到过</span>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-0.5">定额: {{ card.count }}张卡 · {{ card.createdAt }} 排</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-1.5 items-center">
+                            <button v-if="index === 0 && (!playingList[0] || !playingList[1])" @click="startPlayChunithm(card.id)" class="bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold shadow-sm">上机</button>
+                            <button @click="editCard(card)" class="text-gray-400 hover:text-gray-600 p-1 text-sm">✏️</button>
+                            <button @click="removeCard(card.id)" class="text-red-400 hover:text-red-600 p-1 text-sm">❌</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 text-[11px] pt-1">
+                        <button v-if="index > 0" @click="moveToTop(card.id)" class="text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded font-medium">🌟 顶上</button>
+                        <button v-if="index !== queue.length - 1" @click="moveToBottom(card.id)" class="text-orange-500 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded font-medium">⏳ 迟到末尾</button>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center py-8 text-gray-400 text-sm">暂无排卡，快来成为第一个！</div>
+        </section>
+    </main>
+
+    <main v-if="currentTab === 'attendance'">
+        <section class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 rounded-2xl text-white shadow-sm text-center">
+                <div class="text-xs opacity-80">当前已出勤总人数</div>
+                <div class="text-3xl font-extrabold mt-1">{{ queue.length }} <span class="text-xs font-normal">人</span></div>
+            </div>
+            <div class="bg-gradient-to-br from-cyan-500 to-blue-600 p-4 rounded-2xl text-white shadow-sm text-center">
+                <div class="text-xs opacity-80">出勤总卡数</div>
+                <div class="text-3xl font-extrabold mt-1">{{ totalAttendanceCards }} <span class="text-xs font-normal">张</span></div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-4 shadow-sm mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">今日出勤报到花名册</h2>
+                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 重置出勤</button>
+            </div>
+            <div class="divide-y divide-gray-100" v-if="queue.length > 0">
+                <div v-for="(person, index) in queue" :key="person.id" class="py-3 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold">{{ index + 1 }}</span>
+                        <div>
+                            <span class="font-bold text-gray-800">{{ person.name }}</span>
+                            <span class="text-[10px] text-gray-400 ml-2">于 {{ person.createdAt }} 签到</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-semibold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md">带卡: {{ person.count }}张</span>
+                        <button @click="removeCard(person.id)" class="text-red-400 text-xs hover:text-red-600">撤销</button>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center py-12 text-gray-400 text-sm">今天还没有小伙伴报到，快去底下签到！</div>
+        </section>
+    </main>
 
     <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-50">
         <form @submit.prevent="submitCard" class="flex gap-2 items-center">
-            <input type="text" v-model="form.name" placeholder="输入昵称/多人用+号隔开" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
+            <input type="text" v-model="form.name" :placeholder="currentTab === 'attendance' ? '输入出勤昵称...' : '输入昵称/多人用+号隔开'" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
             <select v-model="form.count" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24">
                 <option :value="1">1张卡</option>
                 <option :value="2">2张卡</option>
                 <option :value="3">3张卡</option>
-                <option :value="4">4人同玩</option>
+                <option v-if="currentTab === 'maimai'" :value="4">4人同玩</option>
+                <option v-if="currentTab === 'attendance'" :value="4">4张卡</option>
             </select>
-            <button type="submit" class="bg-orange-500 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md">
-                <span v-if="isEditing">修改</span>
-                <span v-else>排卡</span>
+            <button type="submit" :class="tabColorClass" class="text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md transition-colors">
+                <span>{{ isEditing ? '修改' : (currentTab === 'attendance' ? '报到' : '排卡') }}</span>
             </button>
             <button type="button" v-if="isEditing" @click="cancelEdit" class="bg-gray-200 text-gray-600 text-sm px-2.5 py-2.5 rounded-xl">取消</button>
         </form>
@@ -119,9 +227,13 @@ const { createApp, ref, computed, onMounted } = Vue;
 const SUPABASE_URL = 'https://yeoirthgrsyaltakadog.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_EfAPV9uDkGEG1ioa2MAfwQ_sfytAxgc';
 
-const supabaseFetch = async (method, body = null) => {
+// 核心多模块网络请求层
+const supabaseFetch = async (method, tabId, body = null) => {
+    // 映射关系：maimai->main_room, chunithm->chunithm_room, attendance->attendance_room
+    const roomId = tabId === 'maimai' ? 'main_room' : (tabId === 'chunithm' ? 'chunithm_room' : 'attendance_room');
     let url = `${SUPABASE_URL}/rest/v1/maimai_data`;
-    if (method === 'GET') url += `?id=eq.main_room`;
+    if (method === 'GET') url += `?id=eq.${roomId}`;
+    
     const headers = {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -129,7 +241,7 @@ const supabaseFetch = async (method, body = null) => {
     };
     if (method === 'POST') headers['Prefer'] = 'resolution=merge-duplicates';
 
-    const options = { method: method, headers: headers };
+    const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
 
     const res = await fetch(url, options);
@@ -139,6 +251,7 @@ const supabaseFetch = async (method, body = null) => {
 
 createApp({
     setup() {
+        const currentTab = ref('maimai'); // 当前激活的二级菜单
         const queue = ref([]);
         const playingList = ref([]);
         const isEditing = ref(false);
@@ -147,20 +260,41 @@ createApp({
         const lastClearDate = ref(''); 
         const form = ref({ name: '', count: 1 });
 
+        // 各种动态计算属性
         const totalWaitTime = computed(() => queue.value.reduce((sum, item) => sum + (item.count * 12), 0));
+        const totalAttendanceCards = computed(() => queue.value.reduce((sum, item) => sum + item.count, 0));
+        const tabColorClass = computed(() => {
+            if (currentTab.value === 'maimai') return 'bg-orange-500 hover:bg-orange-600';
+            if (currentTab.value === 'chunithm') return 'bg-indigo-600 hover:bg-indigo-700';
+            return 'bg-emerald-600 hover:bg-emerald-700';
+        });
+
         const getNowTime = () => {
             const now = new Date();
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         };
 
+        // 切换菜单时，立即清空旧视图并拉取对应数据库数据
+        const switchTab = (tabName) => {
+            currentTab.value = tabName;
+            queue.value = [];
+            playingList.value = [];
+            cancelEdit();
+            fetchDataFromCloud();
+        };
+
         const fetchDataFromCloud = async () => {
             try {
-                const data = await supabaseFetch('GET');
+                const data = await supabaseFetch('GET', currentTab.value);
                 if (data && data.length > 0) {
                     const record = data[0];
                     queue.value = record.queue || [];
                     playingList.value = record.playing_list || [];
                     lastClearDate.value = record.last_clear_date || '';
+                } else {
+                    // 如果对应房间完全没数据，做个前端保护清空
+                    queue.value = [];
+                    playingList.value = [];
                 }
                 syncStatus.value = '已同步';
             } catch (error) {
@@ -172,13 +306,14 @@ createApp({
         const pushDataToCloud = async () => {
             syncStatus.value = '正在上传...';
             try {
+                const roomId = currentTab.value === 'maimai' ? 'main_room' : (currentTab.value === 'chunithm' ? 'chunithm_room' : 'attendance_room');
                 const payload = {
-                    id: 'main_room',
+                    id: roomId,
                     queue: JSON.parse(JSON.stringify(queue.value)),
                     playing_list: JSON.parse(JSON.stringify(playingList.value)),
                     last_clear_date: lastClearDate.value
                 };
-                await supabaseFetch('POST', payload);
+                await supabaseFetch('POST', currentTab.value, payload);
                 syncStatus.value = '已同步';
             } catch (error) {
                 console.error(error);
@@ -186,21 +321,22 @@ createApp({
             }
         };
 
-        // 密码锁清空所有数据（包括正在游玩和排队队列）
+        // 统一密码锁清除逻辑
         const clearAllDataWithPassword = async () => {
-            const password = prompt("请输入管理员密码以清空所有数据:");
+            const password = prompt("请输入管理员密码以清空该版块数据:");
             if (password === 'lixiang2006') {
-                if (confirm("警告：这将清空当前正在游玩的机位以及全部排队队列！确定吗？")) {
+                if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
                     queue.value = [];
                     playingList.value = [];
                     await pushDataToCloud();
-                    alert("数据已全部清空！");
+                    alert("清空成功！");
                 }
             } else if (password !== null) {
                 alert("密码错误，拒绝清空！");
             }
         };
 
+        // 公共基础队列操作
         const moveToTop = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index > 0) {
@@ -235,7 +371,8 @@ createApp({
             await pushDataToCloud(); 
         };
 
-        const startPlay = async (id) => {
+        // Maimai 特有上机逻辑（支持双机位同玩切分）
+        const startPlayMaimai = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index !== -1) {
                 const card = queue.value.splice(index, 1)[0];
@@ -255,6 +392,33 @@ createApp({
             }
         };
 
+        // CHUNITHM 特有上机逻辑：精确寻找 1号机 或 2号机 的空位，一人占一机
+        const startPlayChunithm = async (id) => {
+            const index = queue.value.findIndex(c => c.id === id);
+            if (index !== -1) {
+                const card = queue.value.splice(index, 1)[0];
+                const nowTime = getNowTime();
+                
+                // 确保游玩数组格式固定，有且仅有两个槽位对应两台机
+                if (playingList.value.length === 0) {
+                    playingList.value = [{ name: card.name, count: card.count, time: nowTime }, null];
+                } else if (!playingList.value[0]) {
+                    playingList.value[0] = { name: card.name, count: card.count, time: nowTime };
+                } else if (!playingList.value[1]) {
+                    playingList.value[1] = { name: card.name, count: card.count, time: nowTime };
+                }
+                await pushDataToCloud();
+            }
+        };
+
+        // CHUNITHM 精确下机单台机器
+        const finishChunithmMachine = async (machineIndex) => {
+            playingList.value[machineIndex] = null;
+            // 如果两台机器都空了，直接给空数组清空
+            if (!playingList.value[0] && !playingList.value[1]) playingList.value = [];
+            await pushDataToCloud();
+        };
+
         const inviteToPlay = async () => {
             const guestName = prompt("请输入结伴上机的玩家昵称:");
             if (guestName && guestName.trim()) {
@@ -265,12 +429,13 @@ createApp({
 
         const finishPlaySingle = async (index) => { playingList.value.splice(index, 1); await pushDataToCloud(); };
         const finishPlayAll = async () => { playingList.value = []; await pushDataToCloud(); };
-        const removeCard = async (id) => { if(confirm("确定要删除这张排卡吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
+        const removeCard = async (id) => { if(confirm("确定要移除或撤销吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
         const editCard = (card) => { isEditing.value = true; editingId.value = card.id; form.value.name = card.name; form.value.count = card.count; };
         const cancelEdit = () => { isEditing.value = false; editingId.value = null; form.value.name = ''; form.value.count = 1; };
 
         onMounted(() => {
             fetchDataFromCloud();
+            // 常驻每 4 秒自动刷一次云端数据（打字时不干扰刷新）
             setInterval(() => {
                 if (!isEditing.value && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     fetchDataFromCloud();
@@ -278,7 +443,7 @@ createApp({
             }, 4000);
         });
 
-        return { queue, playingList, form, isEditing, totalWaitTime, syncStatus, submitCard, startPlay, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
+        return { currentTab, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
     }
 }).mount('#app');
 </script>
