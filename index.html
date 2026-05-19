@@ -27,7 +27,7 @@
     </header>
 
     <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
-        <img src="zhuye.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <img src="img/banner.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
             <span>🖼️ 制作人：枕梦 | 图片放于 img/banner.jpg</span>
         </div>
@@ -47,7 +47,7 @@
         <div :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out p-5 flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
-                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择游玩的游戏</span>
+                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择机种版块</span>
                     <button @click="toggleMenu" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
                 </div>
                 
@@ -56,7 +56,7 @@
                         <span class="w-2 h-2 rounded-full bg-orange-500"></span> 舞萌 Maimai 排卡
                     </button>
                     <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> 中二 CHUNITHM 排卡
+                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> CHUNITHM 中二排卡
                     </button>
                     <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤卡数统计
@@ -244,18 +244,43 @@
     <div v-if="showTutorialModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-sm max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
             <div class="bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 font-bold text-base flex justify-between items-center">
-                <span>📖 奇妙之城排卡助手说明书</span>
+               <span>📖 奇妙之城排卡助手说明书</span>
                 <button @click="closeTutorial" class="text-xl leading-none opacity-80 hover:opacity-100">✕</button>
             </div>
             <div class="p-4 overflow-y-auto text-xs text-gray-600 space-y-4 leading-relaxed">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">一、核心规则（必读）</h3>
-                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列，无需人工手动还原。</p>
-                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日 09:00 开启全线禁排。</p>
+                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列和上机状态，无需人工每天手动还原。</p>
+                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 为机厅休息禁排时段。此期间底部输入栏将被强行锁定，无法进行任何排卡和修改操作。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">二、舞萌 Maimai 排卡逻辑</h3>
+                    <p>1. 底部输入昵称、选择卡数后点“排卡”即可入队。如果是多人结伴同玩，请用 <b class="text-gray-800 font-bold">+</b> 或 <b class="text-gray-800 font-bold">/</b> 符号隔开（例如：<span class="bg-gray-100 px-1 py-0.5 rounded">张三+李四</span>）。</p>
+                    <p class="mt-1">2. 队列第一组点击“上机”时，若名字带有加号且当前1P和2P都空闲，系统会<b>智能识别并自动把两人同时分发</b>上机！如果位置不够，可以点击右侧的“邀请上机”加人。</p>
+                    <p class="mt-1">3. 如果排卡的人暂时不在，可以点击<b>“迟到末尾”</b>，该卡组会移到队尾并自动标记“迟到过”。若需要紧急插队调整，可以点击<b>“顶上”</b>一键置顶。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">三、中二节奏 CHUNITHM 逻辑</h3>
+                    <p>1. 中二节奏两台机器互不干扰，支持两个<b>独立的单人机位</b>进行并行动作。</p>
+                    <p class="mt-1">2. 队首玩家点击“上机”后，系统会精密侦测 1 号机和 2 号机哪个空闲，并按照最优解自动将你塞入空座位。点击各自机位的“下机”即可释放位置。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">四、出勤张数统计逻辑</h3>
+                    <p>1. 该板块专门统计今日在奇妙之城机厅的总卡数和总出勤人数。</p>
+                    <p class="mt-1">2. 输入你的昵称和带卡数量，点击“报到”。上方的大屏看板会<b>自动累加并高亮渲染</b>当前机厅的总带卡基数，方便大家评估机厅拥挤度。</p>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">五、资源节约技术说明</h3>
+                    <p>1. 网页引入了高级浏览器浏览器会话级缓存（Session Cache）。只要你不关闭这个排卡网页标签页，<b>所有数据均在本地比对，绝不白白刷新消耗服务器流量</b>。</p>
+                    <p class="mt-1">2. 只有当你有实质的排卡、下机、置顶变动时，才会产生网络交互，请放心流畅使用！</p>
                 </div>
             </div>
             <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
-                <button @click="closeTutorial" class="w-full bg-gray-800 text-white font-bold py-2 rounded-xl hover:bg-gray-700">我已了解</button>
+                <button @click="closeTutorial" class="w-full bg-gray-800 text-white font-bold py-2 rounded-xl hover:bg-gray-700 transition-colors">我已了解</button>
             </div>
         </div>
     </div>
