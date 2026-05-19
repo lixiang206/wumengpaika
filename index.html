@@ -12,30 +12,56 @@
 </head>
 <body class="bg-gray-100 font-sans">
 
-<div id="app" v-cloak class="max-w-md mx-auto p-4 pb-28">
-    <header class="text-center my-2">
-        <h1 class="text-2xl font-bold text-gray-800 flex justify-center items-center gap-1.5">
-            <span class="w-3.5 h-3.5 rounded-full bg-cyan-400 inline-block animate-pulse"></span>
-            奇妙之城排卡助手
-            <span class="w-3.5 h-3.5 rounded-full bg-orange-400 inline-block animate-pulse"></span>
+<div id="app" v-cloak class="max-w-md mx-auto p-4 pb-28 relative min-h-screen">
+    
+    <header class="flex items-center justify-between my-2 bg-white p-3 rounded-2xl shadow-sm relative z-30">
+        <button @click="toggleMenu" class="p-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none" title="打开菜单">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+        
+        <h1 class="text-xl font-bold text-gray-800 flex items-center gap-1.5 flex-1 justify-center pr-8">
+            {{ currentTabTitle }}
         </h1>
-        <p class="text-xs text-gray-500 mt-0.5">
-            制作人：枕梦 · 状态: 
-            <span :class="syncStatus === '已同步' ? 'text-green-500' : 'text-red-500 font-bold'">{{ syncStatus }}</span>
-        </p>
     </header>
 
-    <nav class="flex bg-white p-1 rounded-xl shadow-sm my-3 border border-gray-200">
-        <button @click="switchTab('maimai')" :class="currentTab === 'maimai' ? 'bg-orange-500 text-white font-bold shadow-sm' : 'text-gray-600'" class="flex-1 text-center py-2 text-xs rounded-lg transition-all">
-            舞萌 Maimai
-        </button>
-        <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'text-gray-600'" class="flex-1 text-center py-2 text-xs rounded-lg transition-all">
-            CHUNITHM 中二
-        </button>
-        <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'text-gray-600'" class="flex-1 text-center py-2 text-xs rounded-lg transition-all">
-            奇妙之城出勤统计
-        </button>
-    </nav>
+    <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
+        <img src="img/banner.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
+            <span>🖼️ 枕梦提示：请在项目根目录新建 img 文件夹</span>
+            <span class="text-[10px] opacity-70 mt-1">并将图片命名为 banner.jpg 放入即可</span>
+        </div>
+    </div>
+
+    <div>
+        <div v-if="isMenuOpen" @click="toggleMenu" class="fixed inset-0 bg-black/40 z-40 transition-opacity"></div>
+        
+        <div :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
+                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择机种版块</span>
+                    <button @click="toggleMenu" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                </div>
+                
+                <div class="space-y-2">
+                    <button @click="switchTab('maimai')" :class="currentTab === 'maimai' ? 'bg-orange-50 text-orange-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-orange-500"></span> 舞萌 Maimai 排卡
+                    </button>
+                    <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> CHUNITHM 中二排卡
+                    </button>
+                    <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤有多少张卡
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-[10px] text-gray-400 border-t pt-3 border-gray-100">
+                制作人：枕梦 · 每日22:00重置数据
+            </div>
+        </div>
+    </div>
 
     <main v-if="currentTab === 'maimai'">
         <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-cyan-400">
@@ -43,7 +69,7 @@
                 <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Maimai 正在游玩</h2>
                 <div class="flex items-center gap-3">
                     <button v-if="playingList.length > 0" @click="finishPlayAll" class="text-xs text-red-500 hover:text-red-700 font-semibold">一键全下机</button>
-                    <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空板子</button>
+                    <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空整个板子</button>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -109,7 +135,7 @@
         <section class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-l-4 border-indigo-500">
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">CHUNITHM 正在游玩</h2>
-                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空板子</button>
+                <button @click="clearAllDataWithPassword" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded-lg font-semibold flex items-center gap-0.5">🔒 清空整个板子</button>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-indigo-50 p-3 rounded-xl relative overflow-hidden min-h-[90px] flex flex-col justify-between border border-indigo-100">
@@ -203,7 +229,7 @@
         </section>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-50">
+    <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-40">
         <form @submit.prevent="submitCard" class="flex gap-2 items-center">
             <input type="text" v-model="form.name" :placeholder="currentTab === 'attendance' ? '输入出勤昵称...' : '输入昵称/多人用+号隔开'" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
             <select v-model="form.count" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24">
@@ -227,10 +253,10 @@ const { createApp, ref, computed, onMounted } = Vue;
 const SUPABASE_URL = 'https://yeoirthgrsyaltakadog.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_EfAPV9uDkGEG1ioa2MAfwQ_sfytAxgc';
 
-// 核心多模块网络请求层
+const getRoomId = (tabId) => tabId === 'maimai' ? 'main_room' : (tabId === 'chunithm' ? 'chunithm_room' : 'attendance_room');
+
 const supabaseFetch = async (method, tabId, body = null) => {
-    // 映射关系：maimai->main_room, chunithm->chunithm_room, attendance->attendance_room
-    const roomId = tabId === 'maimai' ? 'main_room' : (tabId === 'chunithm' ? 'chunithm_room' : 'attendance_room');
+    const roomId = getRoomId(tabId);
     let url = `${SUPABASE_URL}/rest/v1/maimai_data`;
     if (method === 'GET') url += `?id=eq.${roomId}`;
     
@@ -251,16 +277,22 @@ const supabaseFetch = async (method, tabId, body = null) => {
 
 createApp({
     setup() {
-        const currentTab = ref('maimai'); // 当前激活的二级菜单
+        const currentTab = ref('maimai'); 
+        const isMenuOpen = ref(false); // 控制左侧汉堡抽屉菜单显隐
         const queue = ref([]);
         const playingList = ref([]);
         const isEditing = ref(false);
         const editingId = ref(null);
-        const syncStatus = ref('正在同步...');
         const lastClearDate = ref(''); 
         const form = ref({ name: '', count: 1 });
 
-        // 各种动态计算属性
+        // 动态计算顶部标题
+        const currentTabTitle = computed(() => {
+            if (currentTab.value === 'maimai') return 'Maimai 排卡 - 奇妙之城';
+            if (currentTab.value === 'chunithm') return 'CHUNITHM 排卡 - 奇妙之城';
+            return '奇妙之城出勤卡数统计';
+        });
+
         const totalWaitTime = computed(() => queue.value.reduce((sum, item) => sum + (item.count * 12), 0));
         const totalAttendanceCards = computed(() => queue.value.reduce((sum, item) => sum + item.count, 0));
         const tabColorClass = computed(() => {
@@ -274,13 +306,22 @@ createApp({
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         };
 
-        // 切换菜单时，立即清空旧视图并拉取对应数据库数据
-        const switchTab = (tabName) => {
-            currentTab.value = tabName;
-            queue.value = [];
-            playingList.value = [];
-            cancelEdit();
-            fetchDataFromCloud();
+        const toggleMenu = () => {
+            isMenuOpen.value = !isMenuOpen.value;
+        };
+
+        const loadFromCacheOrCloud = async () => {
+            const cacheKey = `cache_${getRoomId(currentTab.value)}`;
+            const cachedData = sessionStorage.getItem(cacheKey);
+
+            if (cachedData) {
+                const record = JSON.parse(cachedData);
+                queue.value = record.queue || [];
+                playingList.value = record.playing_list || [];
+                lastClearDate.value = record.last_clear_date || '';
+            } else {
+                await fetchDataFromCloud();
+            }
         };
 
         const fetchDataFromCloud = async () => {
@@ -291,37 +332,38 @@ createApp({
                     queue.value = record.queue || [];
                     playingList.value = record.playing_list || [];
                     lastClearDate.value = record.last_clear_date || '';
-                } else {
-                    // 如果对应房间完全没数据，做个前端保护清空
-                    queue.value = [];
-                    playingList.value = [];
+                    sessionStorage.setItem(`cache_${getRoomId(currentTab.value)}`, JSON.stringify(record));
                 }
-                syncStatus.value = '已同步';
             } catch (error) {
-                console.error(error);
-                syncStatus.value = '同步失败';
+                console.error("数据加载失败", error);
             }
         };
 
         const pushDataToCloud = async () => {
-            syncStatus.value = '正在上传...';
             try {
-                const roomId = currentTab.value === 'maimai' ? 'main_room' : (currentTab.value === 'chunithm' ? 'chunithm_room' : 'attendance_room');
+                const roomId = getRoomId(currentTab.value);
                 const payload = {
                     id: roomId,
                     queue: JSON.parse(JSON.stringify(queue.value)),
                     playing_list: JSON.parse(JSON.stringify(playingList.value)),
                     last_clear_date: lastClearDate.value
                 };
+                sessionStorage.setItem(`cache_${roomId}`, JSON.stringify(payload));
                 await supabaseFetch('POST', currentTab.value, payload);
-                syncStatus.value = '已同步';
             } catch (error) {
-                console.error(error);
-                syncStatus.value = '写入失败';
+                console.error("写入失败", error);
             }
         };
 
-        // 统一密码锁清除逻辑
+        const switchTab = (tabName) => {
+            currentTab.value = tabName;
+            isMenuOpen.value = false; // 切换版块后自动收起左侧菜单
+            queue.value = [];
+            playingList.value = [];
+            cancelEdit();
+            loadFromCacheOrCloud();
+        };
+
         const clearAllDataWithPassword = async () => {
             const password = prompt("请输入管理员密码以清空该版块数据:");
             if (password === 'lixiang2006') {
@@ -336,7 +378,6 @@ createApp({
             }
         };
 
-        // 公共基础队列操作
         const moveToTop = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index > 0) {
@@ -371,7 +412,6 @@ createApp({
             await pushDataToCloud(); 
         };
 
-        // Maimai 特有上机逻辑（支持双机位同玩切分）
         const startPlayMaimai = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index !== -1) {
@@ -392,14 +432,11 @@ createApp({
             }
         };
 
-        // CHUNITHM 特有上机逻辑：精确寻找 1号机 或 2号机 的空位，一人占一机
         const startPlayChunithm = async (id) => {
             const index = queue.value.findIndex(c => c.id === id);
             if (index !== -1) {
                 const card = queue.value.splice(index, 1)[0];
                 const nowTime = getNowTime();
-                
-                // 确保游玩数组格式固定，有且仅有两个槽位对应两台机
                 if (playingList.value.length === 0) {
                     playingList.value = [{ name: card.name, count: card.count, time: nowTime }, null];
                 } else if (!playingList.value[0]) {
@@ -411,10 +448,8 @@ createApp({
             }
         };
 
-        // CHUNITHM 精确下机单台机器
         const finishChunithmMachine = async (machineIndex) => {
             playingList.value[machineIndex] = null;
-            // 如果两台机器都空了，直接给空数组清空
             if (!playingList.value[0] && !playingList.value[1]) playingList.value = [];
             await pushDataToCloud();
         };
@@ -434,16 +469,15 @@ createApp({
         const cancelEdit = () => { isEditing.value = false; editingId.value = null; form.value.name = ''; form.value.count = 1; };
 
         onMounted(() => {
-            fetchDataFromCloud();
-            // 常驻每 4 秒自动刷一次云端数据（打字时不干扰刷新）
+            loadFromCacheOrCloud();
             setInterval(() => {
                 if (!isEditing.value && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     fetchDataFromCloud();
                 }
-            }, 4000);
+            }, 5000);
         });
 
-        return { currentTab, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
+        return { currentTab, isMenuOpen, currentTabTitle, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, toggleMenu, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
     }
 }).mount('#app');
 </script>
