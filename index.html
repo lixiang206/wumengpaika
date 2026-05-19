@@ -117,13 +117,24 @@
             <div class="divide-y divide-gray-100" v-if="queue.length > 0">
                 <div v-for="(card, index) in queue" :key="card.id" class="py-3 flex flex-col gap-2">
                     <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
+                        <div class="flex items-start gap-3">
+                            <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold mt-1" :class="index === 0 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'">{{ index + 1 }}</span>
                             <div>
                                 <div class="font-bold text-gray-800 text-base flex items-center gap-1">
                                     {{ card.name }}
                                     <span v-if="card.isMovedToBottom" class="text-[10px] bg-red-100 text-red-600 px-1 rounded">迟到过</span>
                                 </div>
+                                
+                                <div class="flex items-center gap-1.5 my-1">
+                                    <span :class="card.playType === '单刷' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'" class="text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors">
+                                        {{ card.playType || '拼机' }}
+                                    </span>
+                                    <div class="inline-flex rounded-md p-0.5 bg-gray-100 text-[10px] font-semibold">
+                                        <button type="button" :disabled="isNightRestriction" @click="togglePlayType(card.id, '拼机')" :class="(card.playType || '拼机') === '拼机' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-400 hover:text-gray-600'" class="px-1.5 py-0.5 rounded-sm transition-all">拼</button>
+                                        <button type="button" :disabled="isNightRestriction" @click="togglePlayType(card.id, '单刷')" :class="card.playType === '单刷' ? 'bg-white text-purple-600 shadow-xs' : 'text-gray-400 hover:text-gray-600'" class="px-1.5 py-0.5 rounded-sm transition-all">单</button>
+                                    </div>
+                                </div>
+
                                 <div class="text-xs text-gray-400 mt-0.5">卡数: {{ card.count === 4 ? '4人同玩' : card.count + '张' }} · {{ card.createdAt }} 排</div>
                             </div>
                         </div>
@@ -464,7 +475,6 @@ createApp({
                 const inputHash = md5(cleanPassword);
                 const dbHash = cloudPasswordHash.value ? cloudPasswordHash.value.trim().toLowerCase() : '';
 
-                // 同时比对输入的MD5与从云端动态获取到的MD5，或者使用明文做最终兜底
                 if (inputHash === dbHash || cleanPassword === 'lixiang2006') {
                     if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
                         queue.value = [];
@@ -478,6 +488,16 @@ createApp({
             }
         };
 
+        // 🌟 新增：切换拼机/单刷状态函数
+        const togglePlayType = async (id, type) => {
+            if (isNightRestriction.value) return;
+            const card = queue.value.find(c => c.id === id);
+            if (card) {
+                card.playType = type;
+                await pushDataToCloud(); // 实时保存数据到 Supabase
+            }
+        };
+
         const submitCard = async () => {
             if (isNightRestriction.value) { alert("休息时间暂停排卡！"); return; }
             const inputName = form.value.name.trim();
@@ -488,7 +508,8 @@ createApp({
                 isEditing.value = false;
                 editingId.value = null;
             } else {
-                queue.value.push({ id: Date.now().toString(), name: inputName, count: form.value.count, createdAt: getNowTime(), isMovedToBottom: false });
+                // 🌟 新加进去的卡组默认设为 '拼机' 状态
+                queue.value.push({ id: Date.now().toString(), name: inputName, count: form.value.count, createdAt: getNowTime(), isMovedToBottom: false, playType: '拼机' });
             }
             form.value.name = ''; form.value.count = 1;
             await pushDataToCloud(); 
@@ -584,7 +605,7 @@ createApp({
             }, 5000);
         });
 
-        return { currentTab, isMenuOpen, showTutorialModal, currentTabTitle, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, isNightRestriction, toggleMenu, openTutorial, closeTutorial, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword };
+        return { currentTab, isMenuOpen, showTutorialModal, currentTabTitle, queue, playingList, form, isEditing, totalWaitTime, totalAttendanceCards, tabColorClass, isNightRestriction, toggleMenu, openTutorial, closeTutorial, switchTab, submitCard, startPlayMaimai, startPlayChunithm, finishChunithmMachine, finishPlaySingle, finishPlayAll, removeCard, editCard, cancelEdit, inviteToPlay, moveToTop, moveToBottom, clearAllDataWithPassword, togglePlayType };
     }
 }).mount('#app');
 </script>
