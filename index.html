@@ -6,6 +6,7 @@
     <title>奇妙之城实时排卡助手</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
     <style>
         [v-cloak] { display: none !important; }
     </style>
@@ -15,12 +16,11 @@
 <div id="app" v-cloak class="max-w-md mx-auto p-4 pb-28 relative min-h-screen">
     
     <header class="flex items-center justify-between my-2 bg-white p-3 rounded-2xl shadow-sm relative z-30">
-        <button @click="toggleMenu" class="p-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none" title="打开菜单">
+        <button @click="toggleMenu" class="p-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
         </button>
-        
         <h1 class="text-xl font-bold text-gray-800 flex items-center gap-1.5 flex-1 justify-center pr-8">
             {{ currentTabTitle }}
         </h1>
@@ -250,55 +250,29 @@
             <div class="p-4 overflow-y-auto text-xs text-gray-600 space-y-4 leading-relaxed">
                 <div>
                     <h3 class="font-bold text-gray-800 text-sm mb-1">一、核心规则（必读）</h3>
-                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列和上机状态，无需人工每天手动还原。</p>
-                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日早上 09:00 为机厅休息禁排时段。此期间底部输入栏将被强行锁定，无法进行任何排卡和修改操作。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">二、舞萌 Maimai 排卡逻辑</h3>
-                    <p>1. 底部输入昵称、选择卡数后点“排卡”即可入队。如果是多人结伴同玩，请用 <b class="text-gray-800 font-bold">+</b> 或 <b class="text-gray-800 font-bold">/</b> 符号隔开（例如：<span class="bg-gray-100 px-1 py-0.5 rounded">张三+李四</span>）。</p>
-                    <p class="mt-1">2. 队列第一组点击“上机”时，若名字带有加号且当前1P和2P都空闲，系统会<b>智能识别并自动把两人同时分发</b>上机！如果位置不够，可以点击右侧的“邀请上机”加人。</p>
-                    <p class="mt-1">3. 如果排卡的人暂时不在，可以点击<b>“迟到末尾”</b>，该卡组会移到队尾并自动标记“迟到过”。若需要紧急插队调整，可以点击<b>“顶上”</b>一键置顶。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">三、中二节奏 CHUNITHM 逻辑</h3>
-                    <p>1. 中二节奏两台机器互不干扰，支持两个<b>独立的单人机位</b>进行并行动作。</p>
-                    <p class="mt-1">2. 队首玩家点击“上机”后，系统会精密侦测 1 号机和 2 号机哪个空闲，并按照最优解自动将你塞入空座位。点击各自机位的“下机”即可释放位置。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">四、出勤张数统计逻辑</h3>
-                    <p>1. 该板块专门统计今日在奇妙之城机厅的总卡数和总出勤人数。</p>
-                    <p class="mt-1">2. 输入你的昵称和带卡数量，点击“报到”。上方的大屏看板会<b>自动累加并高亮渲染</b>当前机厅的总带卡基数，方便大家评估机厅拥挤度。</p>
-                </div>
-                <hr class="border-gray-100">
-                <div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">五、资源节约技术说明</h3>
-                    <p>1. 网页引入了高级浏览器浏览器会话级缓存（Session Cache）。只要你不关闭这个排卡网页标签页，<b>所有数据均在本地比对，绝不白白刷新消耗服务器流量</b>。</p>
-                    <p class="mt-1">2. 只有当你有实质的排卡、下机、置顶变动时，才会产生网络交互，请放心流畅使用！</p>
+                    <p class="text-orange-600 font-medium">1. 自动重置：每晚 22:00 之后，系统会自动清空云端的所有队列，无需人工手动还原。</p>
+                    <p class="text-red-500 font-medium mt-1">2. 夜间熔断：每晚 23:00 到次日 09:00 开启全线禁排。</p>
                 </div>
             </div>
             <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
-                <button @click="closeTutorial" class="w-full bg-gray-800 text-white font-bold py-2 rounded-xl hover:bg-gray-700 transition-colors">我已了解</button>
+                <button @click="closeTutorial" class="w-full bg-gray-800 text-white font-bold py-2 rounded-xl hover:bg-gray-700">我已了解</button>
             </div>
         </div>
     </div>
 
     <footer class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 shadow-xl rounded-t-2xl z-40">
         <form @submit.prevent="submitCard" class="flex gap-2 items-center">
-            <input type="text" v-model="form.name" :disabled="isNightRestriction" :placeholder="isNightRestriction ? '夜间机厅休息，暂停排卡' : (currentTab === 'attendance' ? '输入出勤昵称...' : '输入昵称/多人用+号隔开')" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed">
-            <select v-model="form.count" :disabled="isNightRestriction" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24 disabled:bg-gray-200 disabled:text-gray-400">
+            <input type="text" v-model="form.name" :disabled="isNightRestriction" :placeholder="isNightRestriction ? '夜间休息，暂停排卡' : '输入昵称...'" required class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5">
+            <select v-model="form.count" :disabled="isNightRestriction" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl p-2.5 w-24">
                 <option :value="1">1张卡</option>
                 <option :value="2">2张卡</option>
                 <option :value="3">3张卡</option>
                 <option v-if="currentTab === 'maimai'" :value="4">4人同玩</option>
                 <option v-if="currentTab === 'attendance'" :value="4">4张卡</option>
             </select>
-            <button type="submit" :disabled="isNightRestriction" :class="isNightRestriction ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : tabColorClass" class="text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md transition-colors">
+            <button type="submit" :disabled="isNightRestriction" :class="isNightRestriction ? 'bg-gray-300' : tabColorClass" class="text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-md">
                 <span>{{ isEditing ? '修改' : (currentTab === 'attendance' ? '报到' : '排卡') }}</span>
             </button>
-            <button type="button" v-if="isEditing" @click="cancelEdit" class="bg-gray-200 text-gray-600 text-sm px-2.5 py-2.5 rounded-xl">取消</button>
         </form>
     </footer>
 </div>
@@ -335,13 +309,14 @@ createApp({
     setup() {
         const currentTab = ref('maimai'); 
         const isMenuOpen = ref(false); 
-        const showTutorialModal = ref(false); // 💡 控制使用教程弹窗层状态
+        const showTutorialModal = ref(false); 
         const queue = ref([]);
         const playingList = ref([]);
         const isEditing = ref(false);
         const editingId = ref(null);
         const lastClearDate = ref(''); 
         const form = ref({ name: '', count: 1 });
+        const cloudPasswordHash = ref('');
 
         const isNightRestriction = computed(() => {
             const hour = new Date().getHours();
@@ -357,9 +332,9 @@ createApp({
         const totalWaitTime = computed(() => queue.value.reduce((sum, item) => sum + (item.count * 12), 0));
         const totalAttendanceCards = computed(() => queue.value.reduce((sum, item) => sum + item.count, 0));
         const tabColorClass = computed(() => {
-            if (currentTab.value === 'maimai') return 'bg-orange-500 hover:bg-orange-600';
-            if (currentTab.value === 'chunithm') return 'bg-indigo-600 hover:bg-indigo-700';
-            return 'bg-emerald-600 hover:bg-emerald-700';
+            if (currentTab.value === 'maimai') return 'bg-orange-500';
+            if (currentTab.value === 'chunithm') return 'bg-indigo-600';
+            return 'bg-emerald-600';
         });
 
         const getNowTime = () => {
@@ -373,8 +348,6 @@ createApp({
         };
 
         const toggleMenu = () => { isMenuOpen.value = !isMenuOpen.value; };
-        
-        // 💡 教程弹窗交互控制
         const openTutorial = () => { showTutorialModal.value = true; isMenuOpen.value = false; };
         const closeTutorial = () => { showTutorialModal.value = false; };
 
@@ -399,6 +372,7 @@ createApp({
 
             if (cachedData) {
                 const record = JSON.parse(cachedData);
+                if (record.admin_password) cloudPasswordHash.value = record.admin_password;
                 const cleared = await checkAndExecuteAutoClear(record);
                 if (!cleared) {
                     queue.value = record.queue || [];
@@ -415,6 +389,9 @@ createApp({
                 const data = await supabaseFetch('GET', currentTab.value);
                 if (data && data.length > 0) {
                     const record = data[0];
+                    if (record.admin_password) {
+                        cloudPasswordHash.value = record.admin_password;
+                    }
                     const cleared = await checkAndExecuteAutoClear(record);
                     if (!cleared) {
                         queue.value = record.queue || [];
@@ -435,7 +412,8 @@ createApp({
                     id: roomId,
                     queue: JSON.parse(JSON.stringify(queue.value)),
                     playing_list: JSON.parse(JSON.stringify(playingList.value)),
-                    last_clear_date: lastClearDate.value
+                    last_clear_date: lastClearDate.value,
+                    admin_password: cloudPasswordHash.value
                 };
                 sessionStorage.setItem(`cache_${roomId}`, JSON.stringify(payload));
                 await supabaseFetch('POST', currentTab.value, payload);
@@ -453,22 +431,30 @@ createApp({
             loadFromCacheOrCloud();
         };
 
+        // 🔒 标准密码鉴权核心
         const clearAllDataWithPassword = async () => {
             const password = prompt("请输入管理员密码以清空该版块数据:");
-            if (password === 'lixiang2006') {
-                if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
-                    queue.value = [];
-                    playingList.value = [];
-                    await pushDataToCloud();
-                    alert("清空成功！");
+            if (password !== null) {
+                const cleanPassword = password.trim(); 
+                const inputHash = md5(cleanPassword);
+                const dbHash = cloudPasswordHash.value ? cloudPasswordHash.value.trim().toLowerCase() : '';
+
+                // 同时比对输入的MD5与从云端动态获取到的MD5，或者使用明文做最终兜底
+                if (inputHash === dbHash || cleanPassword === 'lixiang2006') {
+                    if (confirm("警告：确认彻底清空当前版块的所有数据吗？不可恢复！")) {
+                        queue.value = [];
+                        playingList.value = [];
+                        await pushDataToCloud();
+                        alert("清空成功！");
+                    }
+                } else {
+                    alert("密码错误，拒绝清空！");
                 }
-            } else if (password !== null) {
-                alert("密码错误，拒绝清空！");
             }
         };
 
         const submitCard = async () => {
-            if (isNightRestriction.value) { alert("晚上23:00至次日09:00期间禁止上传排卡数据！"); return; }
+            if (isNightRestriction.value) { alert("休息时间暂停排卡！"); return; }
             const inputName = form.value.name.trim();
             if (!inputName) return;
             if (isEditing.value) {
@@ -560,8 +546,7 @@ createApp({
 
         const finishPlaySingle = async (index) => { if (isNightRestriction.value) return; playingList.value.splice(index, 1); await pushDataToCloud(); };
         const finishPlayAll = async () => { if (isNightRestriction.value) return; playingList.value = []; await pushDataToCloud(); };
-        const removeCard = async (id) => { if (isNightRestriction.value) return; if(confirm("确定要移除或撤销吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
-        
+        const removeCard = async (id) => { if (isNightRestriction.value) return; if(confirm("确定要移除吗？")) { queue.value = queue.value.filter(c => c.id !== id); await pushDataToCloud(); } };
         const editCard = (card) => { if (isNightRestriction.value) return; isEditing.value = true; editingId.value = card.id; form.value.name = card.name; form.value.count = card.count; };
         const cancelEdit = () => { isEditing.value = false; editingId.value = null; form.value.name = ''; form.value.count = 1; };
 
