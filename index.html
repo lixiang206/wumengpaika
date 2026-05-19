@@ -27,7 +27,7 @@
     </header>
 
     <div class="my-4 rounded-2xl overflow-hidden shadow-sm bg-gray-200 aspect-[16/7] w-full relative">
-        <img src="img/banner.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <img src="zhuye.jpg" alt="奇妙之城排卡" class="w-full h-full object-cover object-center" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         <div class="absolute inset-0 hidden flex-col items-center justify-center text-gray-400 bg-gray-300 text-xs">
             <span>🖼️ 制作人：枕梦 | 图片放于 img/banner.jpg</span>
         </div>
@@ -47,7 +47,7 @@
         <div :class="isMenuOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out p-5 flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
-                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择机种版块</span>
+                    <span class="font-bold text-gray-800 text-lg">⚙️ 选择游玩的游戏</span>
                     <button @click="toggleMenu" class="text-gray-400 hover:text-gray-600 text-xl">✕</button>
                 </div>
                 
@@ -56,7 +56,7 @@
                         <span class="w-2 h-2 rounded-full bg-orange-500"></span> 舞萌 Maimai 排卡
                     </button>
                     <button @click="switchTab('chunithm')" :class="currentTab === 'chunithm' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> CHUNITHM 中二排卡
+                        <span class="w-2 h-2 rounded-full bg-indigo-600"></span> 中二 CHUNITHM 排卡
                     </button>
                     <button @click="switchTab('attendance')" :class="currentTab === 'attendance' ? 'bg-emerald-50 text-emerald-600 font-bold' : 'text-gray-600 hover:bg-gray-50'" class="w-full text-left px-4 py-3 text-sm rounded-xl transition-all flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 奇妙之城出勤卡数统计
