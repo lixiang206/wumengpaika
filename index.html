@@ -358,7 +358,6 @@ createApp({
         const queue = ref([]);
         const playingList = ref([null, null]);
         
-        // 统一保留底层的结构字段，但前端仅调整和统计这里的 people
         const attendanceCounters = ref({ people: 0, cards: 0 });
 
         const isEditing = ref(false);
@@ -441,12 +440,12 @@ createApp({
         const openTutorial = () => { showTutorialModal.value = true; isMenuOpen.value = false; };
         const closeTutorial = () => { showTutorialModal.value = false; };
 
+        // 修复核心1：重置判定函数，显式接受当前 tab 参数，确保 payload 组装正确
         const checkAndExecuteAutoClear = async (record) => {
             const now = new Date();
             const currentHour = now.getHours();
             const currentMinute = now.getMinutes();
             const todayStr = getTodayDateString();
-
             const isAfterResetTime = (currentHour === 22 && currentMinute >= 30) || currentHour > 22;
 
             if (isAfterResetTime && record.last_clear_date !== todayStr) {
@@ -454,6 +453,8 @@ createApp({
                 playingList.value = [null, null];
                 attendanceCounters.value = { people: 0, cards: 0 };
                 lastClearDate.value = todayStr;
+                
+                // 修复核心2：在这里清空后，立刻将正确的 0 计数打包上传云端，彻底切断历史遗留
                 await pushDataToCloud();
                 return true;
             }
@@ -467,21 +468,23 @@ createApp({
             if (cachedData) {
                 const record = JSON.parse(cachedData);
                 if (record.admin_password) cloudPasswordHash.value = record.admin_password;
+                
                 const cleared = await checkAndExecuteAutoClear(record);
-                if (!cleared) {
-                    if (currentTab.value === 'attendance') {
-                        if (record.queue && record.queue.length > 0 && record.queue[0].isCounterData) {
-                            attendanceCounters.value.people = record.queue[0].people || 0;
-                            attendanceCounters.value.cards = record.queue[0].cards || 0;
-                        } else {
-                            attendanceCounters.value = { people: 0, cards: 0 };
-                        }
+                // 修复核心3：若触发了重置清理，则直接 return 终止执行后续的旧数据读取逻辑
+                if (cleared) return; 
+
+                if (currentTab.value === 'attendance') {
+                    if (record.queue && record.queue.length > 0 && record.queue[0].isCounterData) {
+                        attendanceCounters.value.people = record.queue[0].people || 0;
+                        attendanceCounters.value.cards = record.queue[0].cards || 0;
                     } else {
-                        queue.value = record.queue || [];
+                        attendanceCounters.value = { people: 0, cards: 0 };
                     }
-                    playingList.value = record.playing_list && record.playing_list.length ? record.playing_list : [null, null];
-                    lastClearDate.value = record.last_clear_date || '';
+                } else {
+                    queue.value = record.queue || [];
                 }
+                playingList.value = record.playing_list && record.playing_list.length ? record.playing_list : [null, null];
+                lastClearDate.value = record.last_clear_date || '';
             } else {
                 await fetchDataFromCloud();
             }
@@ -495,22 +498,24 @@ createApp({
                     if (record.admin_password) {
                         cloudPasswordHash.value = record.admin_password;
                     }
+                    
                     const cleared = await checkAndExecuteAutoClear(record);
-                    if (!cleared) {
-                        if (currentTab.value === 'attendance') {
-                            if (record.queue && record.queue.length > 0 && record.queue[0].isCounterData) {
-                                attendanceCounters.value.people = record.queue[0].people || 0;
-                                attendanceCounters.value.cards = record.queue[0].cards || 0;
-                            } else {
-                                attendanceCounters.value = { people: 0, cards: 0 };
-                            }
+                    // 修复核心4：云端同步同理，若判定为跨天重置，同样拦截后续的旧字段赋值
+                    if (cleared) return; 
+
+                    if (currentTab.value === 'attendance') {
+                        if (record.queue && record.queue.length > 0 && record.queue[0].isCounterData) {
+                            attendanceCounters.value.people = record.queue[0].people || 0;
+                            attendanceCounters.value.cards = record.queue[0].cards || 0;
                         } else {
-                            queue.value = record.queue || [];
+                            attendanceCounters.value = { people: 0, cards: 0 };
                         }
-                        playingList.value = record.playing_list && record.playing_list.length ? record.playing_list : [null, null];
-                        lastClearDate.value = record.last_clear_date || '';
-                        sessionStorage.setItem(`cache_${getRoomId(currentTab.value)}`, JSON.stringify(record));
+                    } else {
+                        queue.value = record.queue || [];
                     }
+                    playingList.value = record.playing_list && record.playing_list.length ? record.playing_list : [null, null];
+                    lastClearDate.value = record.last_clear_date || '';
+                    sessionStorage.setItem(`cache_${getRoomId(currentTab.value)}`, JSON.stringify(record));
                 }
             } catch (error) {
                 console.error("数据加载失败", error);
