@@ -440,7 +440,7 @@ createApp({
         const openTutorial = () => { showTutorialModal.value = true; isMenuOpen.value = false; };
         const closeTutorial = () => { showTutorialModal.value = false; };
 
-        // 修复核心1：重置判定函数，显式接受当前 tab 参数，确保 payload 组装正确
+        // 核心修改 1：重置判定函数，显式接受当前 tab 参数，确保 payload 组装正确
         const checkAndExecuteAutoClear = async (record) => {
             const now = new Date();
             const currentHour = now.getHours();
@@ -454,7 +454,7 @@ createApp({
                 attendanceCounters.value = { people: 0, cards: 0 };
                 lastClearDate.value = todayStr;
                 
-                // 修复核心2：在这里清空后，立刻将正确的 0 计数打包上传云端，彻底切断历史遗留
+                // 核心修改 2：在这里清空后，立刻将正确的 0 计数打包上传云端，彻底切断历史遗留
                 await pushDataToCloud();
                 return true;
             }
@@ -470,7 +470,7 @@ createApp({
                 if (record.admin_password) cloudPasswordHash.value = record.admin_password;
                 
                 const cleared = await checkAndExecuteAutoClear(record);
-                // 修复核心3：若触发了重置清理，则直接 return 终止执行后续的旧数据读取逻辑
+                // 核心修改 3：若触发了重置清理，则直接 return 终止执行后续的旧数据读取逻辑
                 if (cleared) return; 
 
                 if (currentTab.value === 'attendance') {
@@ -500,7 +500,7 @@ createApp({
                     }
                     
                     const cleared = await checkAndExecuteAutoClear(record);
-                    // 修复核心4：云端同步同理，若判定为跨天重置，同样拦截后续的旧字段赋值
+                    // 核心修改 4：云端同步同理，若判定为跨天重置，同样拦截后续的旧字段赋值
                     if (cleared) return; 
 
                     if (currentTab.value === 'attendance') {
