@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工资计算器</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#172033;background:#f4f6fa}
+*{box-sizing:border-box}body{margin:0;padding:20px}.wrap{max-width:760px;margin:auto}
+h1{font-size:24px;margin:0 0 6px}.sub{color:#667085;font-size:14px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e5e9f0;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 3px 12px #1720330a}
+h2{font-size:17px;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label.field{display:block;font-size:13px;color:#475467}
+input[type=number],input[type=text]{width:100%;margin-top:6px;padding:11px;border:1px solid #cfd6e1;border-radius:9px;font-size:16px;background:white;color:#172033}
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.check{display:flex;align-items:center;gap:9px;padding:12px;border:1px solid #e1e6ee;border-radius:10px}
+.check input{width:18px;height:18px}
+.rate{font-size:13px;color:#667085;margin-top:12px;line-height:1.8}
+.result{background:#f7f9fc;border-radius:12px;padding:14px}
+.line{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:14px}
+.line strong{font-variant-numeric:tabular-nums}
+.total{border-top:1px solid #dce2eb;margin-top:8px;padding-top:14px}
+.big{font-size:30px;font-weight:750;color:#087443;font-variant-numeric:tabular-nums}
+button{border:0;border-radius:10px;padding:12px 16px;font-size:15px;cursor:pointer}
+.primary{background:#1769d2;color:white}.secondary{background:#eef2f7;color:#263247}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.note{font-size:12px;color:#667085;line-height:1.7}
+@media(max-width:520px){body{padding:12px}.grid,.checks{grid-template-columns:1fr}.card{padding:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>工资计算器</h1>
+<div class="sub">计时底薪、全勤奖、技能奖、加班费和饭卡补贴分开计算</div>
+
+<section class="card">
+<h2>1. 员工信息与基本工资</h2>
+<div class="grid">
+<label class="field">月份<input id="month" type="text" value="2026年10月"></label>
+<label class="field">姓名<input id="name" type="text" placeholder="请输入姓名"></label>
+<label class="field">计时底薪（元）<input id="base" type="number" min="0" step="0.01" value="2150"></label>
+<label class="field">其他扣款（元）<input id="deduct" type="number" min="0" step="0.01" value="0"></label>
+</div>
+<div style="margin-top:15px;font-size:14px;color:#475467;margin-bottom:9px">奖金项目（按实际情况勾选）</div>
+<div class="checks">
+<label class="check"><input id="attendance" type="checkbox" checked><span>全勤奖 <b>+50元</b></span></label>
+<label class="check"><input id="skill" type="checkbox" checked><span>技能奖 <b>+50元</b></span></label>
+</div>
+</section>
+
+<section class="card">
+<h2>2. 加班小时数</h2>
+<div class="grid">
+<label class="field">平时加班（小时）<input id="weekday" type="number" min="0" step="0.5" value="0"></label>
+<label class="field">周末加班（小时）<input id="weekend" type="number" min="0" step="0.5" value="0"></label>
+<label class="field">法定节假日加班（小时）<input id="holiday" type="number" min="0" step="0.5" value="0"></label>
+<label class="field">饭卡补贴（元）<input id="meal" type="number" min="0" step="0.01" value="0"></label>
+</div>
+<div class="rate" id="rates"></div>
+</section>
+
+<section class="card">
+<h2>3. 工资计算结果</h2>
+<div class="result" aria-live="polite">
+<div class="line"><span>计时底薪</span><strong id="vBase">¥0.00</strong></div>
+<div class="line"><span>全勤奖</span><strong id="vAttendance">¥0.00</strong></div>
+<div class="line"><span>技能奖</span><strong id="vSkill">¥0.00</strong></div>
+<div class="line"><span>平时加班费</span><strong id="vWeekday">¥0.00</strong></div>
+<div class="line"><span>周末加班费</span><strong id="vWeekend">¥0.00</strong></div>
+<div class="line"><span>法定节假日加班费</span><strong id="vHoliday">¥0.00</strong></div>
+<div class="line"><span>其他扣款</span><strong id="vDeduct">-¥0.00</strong></div>
+<div class="line total"><b>现金工资</b><strong id="cash">¥0.00</strong></div>
+<div class="line"><span>饭卡补贴（不计入现金）</span><strong id="vMeal">¥0.00</strong></div>
+<div class="total"><div style="font-size:13px;color:#667085">现金工资＋饭卡补贴</div><div class="big" id="grand">¥0.00</div></div>
+</div>
+<div class="actions">
+<button class="primary" id="copy">复制工资明细</button>
+<button class="secondary" id="reset">重置</button>
+</div>
+<p class="note">计算口径：小时工资=计时底薪÷21.75÷8；平时加班按1.5倍、周末按2倍、法定节假日按3倍。各类加班时薪先四舍五入到分，再乘以加班小时数。全勤奖、技能奖分别勾选。饭卡金额单独统计，不计入现金工资。</p>
+</section>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'¥'+(Number(n)||0).toFixed(2);
+let lastText='';
+function num(id){const v=Number($(id).value);return Number.isFinite(v)&&v>0?v:0}
+function calc(){
+ const base=num('base'), h=base/21.75/8;
+ const a=$('attendance').checked?50:0, s=$('skill').checked?50:0;
+ // 先把各类加班时薪四舍五入到分，再乘以考勤小时数，与此前人工核算口径一致
+ const rateWeekday=Math.round(h*1.5*100)/100;
+ const rateWeekend=Math.round(h*2*100)/100;
+ const rateHoliday=Math.round(h*3*100)/100;
+ const w=num('weekday')*rateWeekday, we=num('weekend')*rateWeekend, ho=num('holiday')*rateHoliday;
+ const d=num('deduct'), meal=num('meal');
+ const cash=base+a+s+w+we+ho-d, grand=cash+meal;
+ $('rates').textContent=`当前小时单价：正常 ${h.toFixed(4)} 元；平时加班 ${rateWeekday.toFixed(2)} 元；周末加班 ${rateWeekend.toFixed(2)} 元；法定节假日加班 ${rateHoliday.toFixed(2)} 元。`;
+ $('vBase').textContent=money(base);$('vAttendance').textContent=money(a);$('vSkill').textContent=money(s);
+ $('vWeekday').textContent=money(w);$('vWeekend').textContent=money(we);$('vHoliday').textContent=money(ho);
+ $('vDeduct').textContent='-'+money(d);$('cash').textContent=money(cash);$('vMeal').textContent=money(meal);$('grand').textContent=money(grand);
+ lastText=`${$('month').value}工资明细\n姓名：${$('name').value||'未填写'}\n计时底薪：${money(base)}\n全勤奖：${money(a)}\n技能奖：${money(s)}\n平时加班：${num('weekday')}小时，${money(w)}\n周末加班：${num('weekend')}小时，${money(we)}\n法定节假日加班：${num('holiday')}小时，${money(ho)}\n其他扣款：${money(d)}\n现金工资：${money(cash)}\n饭卡补贴：${money(meal)}\n现金工资＋饭卡：${money(grand)}`;
+}
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input',calc));
+$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lastText);$('copy').textContent='已复制';setTimeout(()=>$('copy').textContent='复制工资明细',1500)}catch(e){alert(lastText)}});
+$('reset').addEventListener('click',()=>{ $('month').value='2026年10月';$('name').value='';$('base').value='2150';$('deduct').value='0';$('weekday').value='0';$('weekend').value='0';$('holiday').value='0';$('meal').value='0';$('attendance').checked=true;$('skill').checked=true;calc();});
+calc();
+</script>
+</body>
+</html>
